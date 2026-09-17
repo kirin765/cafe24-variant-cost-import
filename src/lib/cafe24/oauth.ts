@@ -10,6 +10,7 @@ export const CAFE24_REQUIRED_SCOPES = ["mall.read_product", "mall.write_product"
 
 export const OAUTH_STATE_COOKIE = "cafe24_oauth_state";
 export const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+export const TOKEN_REQUEST_TIMEOUT_MS = 15_000;
 
 const MALL_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,62}$/i;
 
@@ -153,6 +154,7 @@ async function postToken(
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: body.toString(),
+    signal: AbortSignal.timeout(TOKEN_REQUEST_TIMEOUT_MS),
   });
   const text = await response.text();
   let payload: unknown;

@@ -25,7 +25,8 @@ export function GET(request: Request): NextResponse {
   }
   const config = result.config;
   const url = new URL(request.url);
-  const mallId = (url.searchParams.get("mall_id") ?? config.mallId ?? "").trim();
+  const requestedMallId = (url.searchParams.get("mall_id") ?? "").trim();
+  const mallId = requestedMallId || (config.mallId ?? "");
   if (!isValidMallId(mallId)) {
     return NextResponse.json({ error: "유효한 mall_id가 필요합니다." }, { status: 400 });
   }

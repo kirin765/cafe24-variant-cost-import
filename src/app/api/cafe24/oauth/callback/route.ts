@@ -37,8 +37,16 @@ ${body}
   });
 }
 
+function clearStateCookie(response: Response): Response {
+  response.headers.append(
+    "Set-Cookie",
+    `${OAUTH_STATE_COOKIE}=; HttpOnly; SameSite=Lax; Path=/api/cafe24/oauth; Max-Age=0`,
+  );
+  return response;
+}
+
 function errorPage(message: string, status: number): Response {
-  return page("Cafe24 연결 실패", `<p>${escapeHtml(message)}</p>`, status);
+  return clearStateCookie(page("Cafe24 연결 실패", `<p>${escapeHtml(message)}</p>`, status));
 }
 
 function describeToken(token: Cafe24Token): string {
@@ -111,10 +119,5 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   saveToken(check.state.mallId, token);
-  const response = page("Cafe24 연결 완료", describeToken(token), 200);
-  response.headers.append(
-    "Set-Cookie",
-    `${OAUTH_STATE_COOKIE}=; HttpOnly; SameSite=Lax; Path=/api/cafe24/oauth; Max-Age=0`,
-  );
-  return response;
+  return clearStateCookie(page("Cafe24 연결 완료", describeToken(token), 200));
 }

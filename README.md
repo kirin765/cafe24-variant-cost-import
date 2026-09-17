@@ -26,9 +26,9 @@ npm run dev           # http://localhost:3000
 ## 검증
 
 ```bash
-npm test              # 단위 테스트 65개
+npm test              # 단위 테스트 68개
 npm run smoke         # 빌드 결과물을 임시 포트로 띄워 Chromium으로 25개 확인
-npm run e2e           # Playwright E2E 12개 (빌드 후 임시 포트에서 실행)
+npm run e2e           # Playwright E2E 13개 (빌드 후 임시 포트에서 실행)
 npm run verify        # lint → typecheck → test → build → smoke → e2e
 ```
 
@@ -82,9 +82,10 @@ e2e/                  Playwright E2E
 - scope: `mall.read_product`, `mall.write_product`, `mall.read_store`만 요청한다(운영자 권한).
 - state: HMAC-SHA256 서명 + 10분 만료, HttpOnly·SameSite=Lax 쿠키와 비교해 CSRF를 막는다.
 - `mall_id`는 정규식으로 검증해 authorize/token 호스트가 조작되지 않게 한다.
-- 토큰은 서버 메모리에만 보관하고 응답 페이지·로그에 값을 출력하지 않는다. `refreshAccessToken`과
-  `withRefreshLock`으로 동시 refresh를 1회로 합친다. 메모리 저장소는 서버 재시작 시 사라지므로 B단계에서
-  암호화된 DB ledger로 교체한다.
+- 토큰은 서버 메모리에만 보관하고 응답 페이지·로그에 값을 출력하지 않는다. `refreshStoredToken`이
+  회전된 refresh token까지 저장한다. refresh는 토큰 요청 timeout(15초)과 `withRefreshLock`으로 한
+  인스턴스 안에서 1회로 합치지만, 서버리스에서는 인스턴스별로만 동작한다. 메모리 저장소는 서버 재시작 시
+  사라지므로 B단계에서 암호화된 DB ledger로 교체한다.
 - 아직 품목 조회·공급가 쓰기는 하지 않는다.
 
 ## 다음 단계 (B/C)

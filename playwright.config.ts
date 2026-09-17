@@ -49,6 +49,7 @@ export default defineConfig({
         env: {
           CAFE24_CLIENT_ID: process.env.CAFE24_CLIENT_ID ?? "e2e-client-id",
           CAFE24_CLIENT_SECRET: process.env.CAFE24_CLIENT_SECRET ?? "e2e-client-secret",
+          CAFE24_MALL_ID: process.env.CAFE24_MALL_ID ?? "e2e-mall",
         },
       },
 });
