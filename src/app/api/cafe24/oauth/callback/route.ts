@@ -130,7 +130,17 @@ export async function GET(request: Request): Promise<Response> {
     });
     saveProductSnapshot(check.state.mallId, products);
     const withPrice = products.filter((entry) => entry.supplyPrice !== null).length;
-    productSummary = `<p>상품 ${products.length}개를 조회했습니다. 공급가를 읽은 상품 ${withPrice}개.</p>`;
+    const listItems = products
+      .slice(0, 20)
+      .map(
+        (entry) =>
+          `<li><code>${escapeHtml(entry.productNo)}</code> ${escapeHtml(entry.productName)}${
+            entry.supplyPrice === null ? " (공급가 없음)" : ""
+          }</li>`,
+      )
+      .join("");
+    const more = products.length > 20 ? `<li>…외 ${products.length - 20}개</li>` : "";
+    productSummary = `<p>상품 ${products.length}개를 조회했습니다. 공급가를 읽은 상품 ${withPrice}개.</p><ul>${listItems}${more}</ul>`;
   } catch (error) {
     const message = error instanceof Error ? error.message : "알 수 없는 오류";
     productSummary = `<p style="color:#b45309">상품 조회는 실패했습니다. ${escapeHtml(message)}</p>`;
