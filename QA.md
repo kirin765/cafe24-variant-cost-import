@@ -19,11 +19,14 @@ npm run dev           # http://localhost:3000
 ## 자동 검증
 
 ```bash
-npm run verify        # lint → typecheck → unit test → build → 브라우저 스모크
+npm run verify        # lint → typecheck → unit test → build → 브라우저 스모크 → Playwright E2E
 ```
 
 `scripts/smoke.mjs`는 빌드 결과물을 임시 포트(`SMOKE_PORT`, 기본 3111)로 띄우고 Chromium으로 실제
 화면을 조작한다. 시스템 Chromium 경로를 쓰며, 다른 위치면 `CHROMIUM_PATH`로 지정한다.
+
+`npm run e2e`는 `e2e/`의 Playwright 스펙 8개를 별도 포트(`E2E_PORT`, 기본 3112)에서 실행한다.
+`E2E_BASE_URL`을 주면 로컬 서버를 띄우지 않고 그 URL(예: Vercel 배포)을 검사한다.
 
 ### 단위 테스트 — `npm test` (50개, 2026-09-16 통과)
 
@@ -63,6 +66,13 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 | 23 | 베타몰 파일 변경 1건 | 통과 |
 | 24 | 베타몰 미매칭 없음 | 통과 |
 | 25 | 품목 없는 몰은 전부 미매칭 | 통과 |
+
+### Playwright E2E — `npm run e2e` (8개, 2026-09-17 통과)
+
+| 파일 | 덮는 흐름 |
+|---|---|
+| `e2e/home.spec.ts` | 소개 화면의 흐름·규칙·미포함 범위, 데모 링크 이동 |
+| `e2e/demo.spec.ts` | 정상 파일 집계·확정 활성, 확정 안내, 검토/변경/JSON 다운로드, 오류 파일 차단과 행별 메시지, 잘못된 헤더 거부, 몰 전환 격리, 직접 올린 CSV 검증 |
 
 ## 수동 검증표
 

@@ -25,9 +25,12 @@ npm run dev           # http://localhost:3000
 ```bash
 npm test              # 단위 테스트 50개
 npm run smoke         # 빌드 결과물을 임시 포트로 띄워 Chromium으로 25개 확인
-npm run verify        # lint → typecheck → test → build → smoke
+npm run e2e           # Playwright E2E 8개 (빌드 후 임시 포트에서 실행)
+npm run verify        # lint → typecheck → test → build → smoke → e2e
 ```
 
+`npm run e2e`는 `e2e/`의 Playwright 스펙을 돌린다. 시스템 Chromium을 쓰며, 다른 위치면
+`CHROMIUM_PATH`로 지정한다. 이미 배포된 URL을 검사하려면 `E2E_BASE_URL=https://… npm run e2e`.
 자세한 기대 결과와 한도 소모 여부는 `QA.md`에 있다.
 
 ## 구조
