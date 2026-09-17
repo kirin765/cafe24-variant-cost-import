@@ -66,6 +66,11 @@ export interface AuthorizeUrlParams {
   redirectUri: string;
   state: string;
   scope?: readonly string[];
+  shopNo?: string | null;
+}
+
+export function isValidShopNo(value: string): boolean {
+  return /^\d{1,5}$/.test(value);
 }
 
 export function buildAuthorizeUrl(params: AuthorizeUrlParams): string {
@@ -76,6 +81,9 @@ export function buildAuthorizeUrl(params: AuthorizeUrlParams): string {
   url.searchParams.set("state", params.state);
   url.searchParams.set("redirect_uri", params.redirectUri);
   url.searchParams.set("scope", (params.scope ?? CAFE24_OAUTH_SCOPES).join(" "));
+  if (params.shopNo && isValidShopNo(params.shopNo)) {
+    url.searchParams.set("shop_no", params.shopNo);
+  }
   return url.toString();
 }
 

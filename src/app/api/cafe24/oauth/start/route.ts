@@ -33,6 +33,7 @@ export function GET(request: Request): NextResponse {
 
   const redirectUri =
     config.redirectUri ?? new URL("/api/cafe24/oauth/callback", url.origin).toString();
+  const requestedShopNo = (url.searchParams.get("shop_no") ?? "").trim();
   const state = createOAuthState(config.stateSecret, mallId);
   const authorizeUrl = buildAuthorizeUrl({
     mallId,
@@ -40,6 +41,7 @@ export function GET(request: Request): NextResponse {
     redirectUri,
     state,
     scope: CAFE24_OAUTH_SCOPES,
+    shopNo: requestedShopNo || null,
   });
 
   const response = NextResponse.redirect(authorizeUrl, 302);

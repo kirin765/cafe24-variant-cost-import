@@ -28,7 +28,7 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 `npm run e2e`는 `e2e/`의 Playwright 스펙 8개를 별도 포트(`E2E_PORT`, 기본 3112)에서 실행한다.
 `E2E_BASE_URL`을 주면 로컬 서버를 띄우지 않고 그 URL(예: Vercel 배포)을 검사한다.
 
-### 단위 테스트 — `npm test` (68개, 2026-09-17 통과)
+### 단위 테스트 — `npm test` (69개, 2026-09-17 통과)
 
 | 파일 | 덮는 내용 |
 |---|---|
@@ -69,13 +69,13 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 | 24 | 베타몰 미매칭 없음 | 통과 |
 | 25 | 품목 없는 몰은 전부 미매칭 | 통과 |
 
-### Playwright E2E — `npm run e2e` (13개, 2026-09-17 통과)
+### Playwright E2E — `npm run e2e` (15개, 2026-09-17 통과)
 
 | 파일 | 덮는 흐름 |
 |---|---|
 | `e2e/home.spec.ts` | 소개 화면의 흐름·규칙·미포함 범위, 데모 링크 이동 |
 | `e2e/demo.spec.ts` | 정상 파일 집계·확정 활성, 확정 안내, 검토/변경/JSON 다운로드, 오류 파일 차단과 행별 메시지, 잘못된 헤더 거부, 몰 전환 격리, 직접 올린 CSV 검증 |
-| `e2e/oauth.spec.ts` | authorize 302·state 쿠키, 빈 mall_id 기본값 대체, 잘못된 mall_id 400, state 없는 callback 400, 사용자 거부 400 |
+| `e2e/oauth.spec.ts` | launch의 mall_id·shop_no 보존, authorize 302·state 쿠키·shop_no 전달, 빈 mall_id 기본값 대체, 잘못된 mall_id 400, state 없는 callback 400, 사용자 거부 400 |
 
 ## 수동 검증표
 
@@ -92,6 +92,7 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 | `/demo` 명세 내보내기 | 검토 CSV·변경 명세 CSV·JSON 명세 | 검토는 전체 행, 변경 명세는 변경 행만, JSON은 변경 목록·차단 사유 포함 |
 | `/demo` CSV 인코딩 | 내려받은 검토 CSV를 Excel로 열기 | 한글 헤더가 깨지지 않는다(BOM 포함) |
 | `/` 규칙 안내 | 소개 화면 | 매칭·금액·차단 규칙과 "데모에 없는 것"이 보인다 |
+| 앱 실행 진입 | App URL을 `/api/cafe24/launch`로 등록 후 몰에서 앱 실행 | authorize로 이어져 동의 화면이 뜬다 |
 | OAuth 시작 | `CAFE24_*` 설정 후 `/api/cafe24/oauth/start?mall_id=<몰>` | `https://<몰>.cafe24api.com/api/v2/oauth/authorize?...&scope=mall.read_product mall.write_product mall.read_store`로 302 |
 | OAuth 콜백 | 인증 승인 후 callback | 연결 완료 페이지에 mall·scope·만료 시각이 보이고 토큰 값은 보이지 않는다. `state` 불일치·만료는 400 |
 | OAuth 미설정 | `CAFE24_*` 없이 start 호출 | 누락된 환경변수를 나열한 500 |

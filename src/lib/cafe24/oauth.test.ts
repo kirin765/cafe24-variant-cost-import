@@ -85,6 +85,30 @@ describe("buildAuthorizeUrl", () => {
     expect(url.searchParams.get("scope")).toBe(CAFE24_OAUTH_SCOPES.join(" "));
   });
 
+  it("유효한 shop_no만 authorize URL에 넣는다", () => {
+    const withShop = new URL(
+      buildAuthorizeUrl({
+        mallId: "demo",
+        clientId: "client-1",
+        redirectUri: "https://app.example.com/cb",
+        state: "state-1",
+        shopNo: "2",
+      }),
+    );
+    expect(withShop.searchParams.get("shop_no")).toBe("2");
+
+    const ignored = new URL(
+      buildAuthorizeUrl({
+        mallId: "demo",
+        clientId: "client-1",
+        redirectUri: "https://app.example.com/cb",
+        state: "state-1",
+        shopNo: "2;drop",
+      }),
+    );
+    expect(ignored.searchParams.get("shop_no")).toBeNull();
+  });
+
   it("잘못된 mall_id로 URL을 만들지 않는다", () => {
     expect(() =>
       buildAuthorizeUrl({

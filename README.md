@@ -20,15 +20,16 @@ npm run dev           # http://localhost:3000
 |---|---|
 | `/` | 소개·매칭·검증 규칙 |
 | `/demo` | 몰·합성 파일(또는 직접 올린 CSV) 선택 → 검증·변경 미리보기·행별 오류·명세 내보내기 |
-| `/api/cafe24/oauth/start` | Cafe24 authorize로 302 (state 서명 쿠키 발급, `?mall_id=` 필요/기본값) |
+| `/api/cafe24/launch` | Cafe24 앱 실행 진입점. `mall_id`·`shop_no`를 보존해 start로 302 |
+| `/api/cafe24/oauth/start` | Cafe24 authorize로 302 (state 서명 쿠키 발급, `?mall_id=` 필요/기본값, `shop_no` 전달) |
 | `/api/cafe24/oauth/callback` | state 검증 → 토큰 교환 → 메모리 저장, 결과 요약 페이지(토큰 값은 노출하지 않음) |
 
 ## 검증
 
 ```bash
-npm test              # 단위 테스트 68개
+npm test              # 단위 테스트 69개
 npm run smoke         # 빌드 결과물을 임시 포트로 띄워 Chromium으로 25개 확인
-npm run e2e           # Playwright E2E 13개 (빌드 후 임시 포트에서 실행)
+npm run e2e           # Playwright E2E 15개 (빌드 후 임시 포트에서 실행)
 npm run verify        # lint → typecheck → test → build → smoke → e2e
 ```
 

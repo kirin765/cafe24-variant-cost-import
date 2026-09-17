@@ -20,6 +20,25 @@ test("start는 Cafe24 authorize URL로 리다이렉트하고 state 쿠키를 심
   expect(setCookie.toLowerCase()).toContain("httponly");
 });
 
+test("launch는 mall_id·shop_no를 보존해 OAuth start로 넘긴다", async ({ request }) => {
+  const response = await request.get("/api/cafe24/launch?mall_id=demo&shop_no=2", {
+    maxRedirects: 0,
+  });
+  expect(response.status()).toBe(302);
+  const location = new URL(response.headers()["location"]);
+  expect(location.pathname).toBe("/api/cafe24/oauth/start");
+  expect(location.searchParams.get("mall_id")).toBe("demo");
+  expect(location.searchParams.get("shop_no")).toBe("2");
+});
+
+test("start는 shop_no를 authorize URL에 넣는다", async ({ request }) => {
+  const response = await request.get("/api/cafe24/oauth/start?mall_id=demo&shop_no=2", {
+    maxRedirects: 0,
+  });
+  expect(response.status()).toBe(302);
+  expect(new URL(response.headers()["location"]).searchParams.get("shop_no")).toBe("2");
+});
+
 test("start는 빈 mall_id를 기본값으로 대체한다", async ({ request }) => {
   test.skip(Boolean(process.env.E2E_BASE_URL), "기본 mall_id는 로컬 서버에서만 설정된다");
   const response = await request.get("/api/cafe24/oauth/start?mall_id=", { maxRedirects: 0 });
