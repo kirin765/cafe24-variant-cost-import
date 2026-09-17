@@ -20,16 +20,17 @@ npm run dev           # http://localhost:3000
 |---|---|
 | `/` | 소개·매칭·검증 규칙 |
 | `/demo` | 몰·합성 파일(또는 직접 올린 CSV) 선택 → 검증·변경 미리보기·행별 오류·명세 내보내기 |
-| `/api/cafe24/launch` | Cafe24 앱 실행 진입점. `mall_id`·`shop_no`를 보존해 start로 302 |
+| `/` + launch 파라미터 | `hmac`·`mall_id`가 있으면 `src/proxy.ts`가 launch 경로로 307 |
+| `/api/cafe24/launch` | Cafe24 앱 실행 진입점. `hmac`을 검증하고 `mall_id`·`shop_no`를 보존해 start로 302 |
 | `/api/cafe24/oauth/start` | Cafe24 authorize로 302 (state 서명 쿠키 발급, `?mall_id=` 필요/기본값, `shop_no` 전달) |
 | `/api/cafe24/oauth/callback` | state 검증 → 토큰 교환 → 메모리 저장, 결과 요약 페이지(토큰 값은 노출하지 않음) |
 
 ## 검증
 
 ```bash
-npm test              # 단위 테스트 69개
+npm test              # 단위 테스트 75개
 npm run smoke         # 빌드 결과물을 임시 포트로 띄워 Chromium으로 25개 확인
-npm run e2e           # Playwright E2E 15개 (빌드 후 임시 포트에서 실행)
+npm run e2e           # Playwright E2E 19개 (빌드 후 임시 포트에서 실행)
 npm run verify        # lint → typecheck → test → build → smoke → e2e
 ```
 
@@ -87,6 +88,9 @@ e2e/                  Playwright E2E
   회전된 refresh token까지 저장한다. refresh는 토큰 요청 timeout(15초)과 `withRefreshLock`으로 한
   인스턴스 안에서 1회로 합치지만, 서버리스에서는 인스턴스별로만 동작한다. 메모리 저장소는 서버 재시작 시
   사라지므로 B단계에서 암호화된 DB ledger로 교체한다.
+- 앱 실행(launch): 루트로 들어온 `hmac`·`mall_id`를 `src/proxy.ts`가 launch 경로로 넘기고,
+  `verifyLaunchHmac`이 원본 쿼리 문자열에서 `hmac`을 뺀 값의 `base64(HMAC-SHA256)`를 클라이언트 시크릿으로
+  검증한다. 검증에 쓰는 쿼리는 재조립하지 않고 요청 URL 그대로를 사용한다.
 - 아직 품목 조회·공급가 쓰기는 하지 않는다.
 
 ## 다음 단계 (B/C)

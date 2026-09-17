@@ -1,4 +1,53 @@
+import { createHmac } from "node:crypto";
 import { expect, test } from "@playwright/test";
+
+const E2E_SECRET = process.env.CAFE24_CLIENT_SECRET ?? "e2e-client-secret";
+
+function launchQuery(): string {
+  return "is_multi_shop=T&lang=ko_KR&mall_id=demo&nation=KR&shop_no=1&timestamp=1&user_id=demo&user_type=P";
+}
+
+function sign(query: string): string {
+  return createHmac("sha256", E2E_SECRET).update(query).digest("base64");
+}
+
+test("루트로 들어온 launch 요청을 launch 경로로 넘긴다", async ({ request }) => {
+  const query = launchQuery();
+  const response = await request.get(`/?${query}&hmac=${encodeURIComponent(sign(query))}`, {
+    maxRedirects: 0,
+  });
+  expect(response.status()).toBe(307);
+  const location = new URL(response.headers()["location"], "http://localhost");
+  expect(location.pathname).toBe("/api/cafe24/launch");
+  expect(location.searchParams.get("mall_id")).toBe("demo");
+  expect(location.searchParams.get("shop_no")).toBe("1");
+});
+
+test("launch는 잘못된 hmac을 403으로 거부한다", async ({ request }) => {
+  const response = await request.get("/api/cafe24/launch?mall_id=demo&hmac=not-valid", {
+    maxRedirects: 0,
+  });
+  expect(response.status()).toBe(403);
+});
+
+test("launch는 유효한 hmac이면 start로 넘긴다", async ({ request }) => {
+  test.skip(Boolean(process.env.E2E_BASE_URL), "로컬 e2e 비밀키로만 서명을 만들 수 있다");
+  const query = launchQuery();
+  const response = await request.get(
+    `/api/cafe24/launch?${query}&hmac=${encodeURIComponent(sign(query))}`,
+    { maxRedirects: 0 },
+  );
+  expect(response.status()).toBe(302);
+  const location = new URL(response.headers()["location"], "http://localhost");
+  expect(location.pathname).toBe("/api/cafe24/oauth/start");
+  expect(location.searchParams.get("mall_id")).toBe("demo");
+  expect(location.searchParams.get("shop_no")).toBe("1");
+});
+
+test("launch는 hmac 없이 mall_id만으로도 시작한다", async ({ request }) => {
+  const response = await request.get("/api/cafe24/launch?mall_id=demo", { maxRedirects: 0 });
+  expect(response.status()).toBe(302);
+});
 
 test("start는 Cafe24 authorize URL로 리다이렉트하고 state 쿠키를 심는다", async ({ request }) => {
   const response = await request.get("/api/cafe24/oauth/start?mall_id=demo", { maxRedirects: 0 });
@@ -25,7 +74,7 @@ test("launch는 mall_id·shop_no를 보존해 OAuth start로 넘긴다", async (
     maxRedirects: 0,
   });
   expect(response.status()).toBe(302);
-  const location = new URL(response.headers()["location"]);
+  const location = new URL(response.headers()["location"], "http://localhost");
   expect(location.pathname).toBe("/api/cafe24/oauth/start");
   expect(location.searchParams.get("mall_id")).toBe("demo");
   expect(location.searchParams.get("shop_no")).toBe("2");
@@ -36,14 +85,14 @@ test("start는 shop_no를 authorize URL에 넣는다", async ({ request }) => {
     maxRedirects: 0,
   });
   expect(response.status()).toBe(302);
-  expect(new URL(response.headers()["location"]).searchParams.get("shop_no")).toBe("2");
+  expect(new URL(response.headers()["location"], "http://localhost").searchParams.get("shop_no")).toBe("2");
 });
 
 test("start는 빈 mall_id를 기본값으로 대체한다", async ({ request }) => {
   test.skip(Boolean(process.env.E2E_BASE_URL), "기본 mall_id는 로컬 서버에서만 설정된다");
   const response = await request.get("/api/cafe24/oauth/start?mall_id=", { maxRedirects: 0 });
   expect(response.status()).toBe(302);
-  expect(new URL(response.headers()["location"]).origin).toBe("https://e2e-mall.cafe24api.com");
+  expect(new URL(response.headers()["location"], "http://localhost").origin).toBe("https://e2e-mall.cafe24api.com");
 });
 
 test("start는 잘못된 mall_id를 거부한다", async ({ request }) => {
