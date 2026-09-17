@@ -102,6 +102,7 @@ describe("Cafe24 상품목록 형식", () => {
         rawSupplyPrice: "4500",
         fieldCount: 6,
         expectedFieldCount: 6,
+        sourceProductName: "합성 상품 1",
       },
       {
         line: 3,
@@ -109,6 +110,7 @@ describe("Cafe24 상품목록 형식", () => {
         rawSupplyPrice: "9,000.00",
         fieldCount: 6,
         expectedFieldCount: 6,
+        sourceProductName: "합성 상품 2",
       },
     ]);
   });

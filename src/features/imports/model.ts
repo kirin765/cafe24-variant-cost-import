@@ -38,6 +38,7 @@ export interface CsvRow {
   rawSupplyPrice: string;
   fieldCount: number;
   expectedFieldCount?: number;
+  sourceProductName?: string;
 }
 
 export interface PlatformVariant {

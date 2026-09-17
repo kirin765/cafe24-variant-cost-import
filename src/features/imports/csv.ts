@@ -127,9 +127,17 @@ export function normalizeCafe24Amount(raw: string): string {
   return match ? match[1] : raw;
 }
 
-function cafe24ColumnIndexes(headerValues: string[]): { code: number; price: number } {
+function cafe24ColumnIndexes(headerValues: string[]): {
+  code: number;
+  price: number;
+  name: number;
+} {
   const header = headerValues.map(normalizeHeaderCell);
-  return { code: header.indexOf(CAFE24_CODE_HEADER), price: header.indexOf(CAFE24_PRICE_HEADER) };
+  return {
+    code: header.indexOf(CAFE24_CODE_HEADER),
+    price: header.indexOf(CAFE24_PRICE_HEADER),
+    name: header.indexOf("상품명"),
+  };
 }
 
 export function parseSupplyCsv(
@@ -188,7 +196,7 @@ export function parseSupplyCsv(
     return { format, rows, fileIssues };
   }
 
-  const { code, price } = cafe24ColumnIndexes(headerValues);
+  const { code, price, name } = cafe24ColumnIndexes(headerValues);
   const expectedFieldCount = headerValues.length;
   const rows: CsvRow[] = capped.map((record) => ({
     line: record.line,
@@ -196,6 +204,7 @@ export function parseSupplyCsv(
     rawSupplyPrice: normalizeCafe24Amount(record.values[price] ?? ""),
     fieldCount: record.values.length,
     expectedFieldCount,
+    sourceProductName: name >= 0 ? (record.values[name] ?? "") : undefined,
   }));
   return { format, rows, fileIssues };
 }

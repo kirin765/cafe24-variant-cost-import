@@ -28,7 +28,7 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 `npm run e2e`는 `e2e/`의 Playwright 스펙 8개를 별도 포트(`E2E_PORT`, 기본 3112)에서 실행한다.
 `E2E_BASE_URL`을 주면 로컬 서버를 띄우지 않고 그 URL(예: Vercel 배포)을 검사한다.
 
-### 단위 테스트 — `npm test` (79개, 2026-09-17 통과)
+### 단위 테스트 — `npm test` (83개, 2026-09-17 통과)
 
 | 파일 | 덮는 내용 |
 |---|---|
@@ -39,6 +39,7 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 | `src/lib/cafe24/oauth.test.ts` | state 서명·변조·만료·mall_id 검증, authorize URL, 토큰 파싱·필수값, Basic 인증 토큰 교환·오류, 환경변수 누락 |
 | `src/lib/cafe24/token-store.test.ts` | refresh 결과(회전된 refresh token) 저장, 동시 refresh 1회 병합, 실패 후 잠금 해제 |
 | `src/lib/cafe24/launch.test.ts` | launch 쿼리에서 `hmac` 제거, 실제 Cafe24 launch 쿼리 서명 검증, 변조·값 변경·빈 서명 거부 |
+| `src/features/imports/platform-snapshot.test.ts` | 현재 상품목록(Cafe24 상품목록/단순)을 매칭용 품목으로 변환, 공급가·코드 결손 행 건너뛰기, 미지원 형식 거부 |
 
 ### 브라우저 스모크 — `npm run smoke` (25개, 2026-09-16 통과)
 
@@ -70,7 +71,7 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 | 24 | 베타몰 미매칭 없음 | 통과 |
 | 25 | 품목 없는 몰은 전부 미매칭 | 통과 |
 
-### Playwright E2E — `npm run e2e` (20개, 2026-09-17 통과)
+### Playwright E2E — `npm run e2e` (21개, 2026-09-17 통과)
 
 | 파일 | 덮는 흐름 |
 |---|---|
@@ -87,6 +88,7 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 | `/demo` 몰 전환 | 알파/베타/감마 선택 | 알파 10개, 베타 2개, 감마 0개 품목으로 매칭 결과가 달라진다 |
 | `/demo` 직접 올리기 | 정상 CSV 업로드 | 업로드 파일명이 표시되고 같은 검증·미리보기가 재현된다 |
 | `/demo` Cafe24 상품목록 | Cafe24에서 내려받은 상품목록 CSV 업로드 | 형식이 "Cafe24 상품목록"으로 표시되고 `공급가`의 `.00`이 정규화된다. 이 몰 품목에 해당 상품코드가 없으면 미매칭으로 남는다 |
+| `/demo` 현재 상품목록 업로드 | `현재 상품목록 파일 (선택)`에 Cafe24 상품목록 CSV 업로드 | 매칭 품목 수가 표시되고, 이후 올린 변경 CSV가 실제 상품코드로 매칭된다 |
 | `/demo` 인용부호 파일 | 값에 쉼표·개행이 든 셀 업로드 | 값이 잘리지 않고 그대로 오류 판정된다 |
 | `/demo` 열 개수 오류 | `SKU-0001,4800,extra` 행 | 열 3개 오류로 표시되고 확정 불가 |
 | `/demo` 확정 | 정상 파일에서 `확정 (데모)` | 미리보기 버전·해시와 함께 "실제 API 호출은 하지 않았습니다" 안내 |
@@ -104,6 +106,7 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 
 - 실제 onnurimun 상품목록 내보내기 3개(88·92열)는 상품 단위이며 옵션/품목 코드가 없다. `상품코드` 기준
   매칭만 가능하고, 옵션별 공급가를 다루려면 옵션·품목이 포함된 내보내기나 API 조회가 필요하다.
+- 현재 상품목록 업로드는 파일 기반이다. 실제 서비스에서는 Cafe24 API 조회로 대체한다(토큰 영속 저장 필요).
 - OAuth 콜백·토큰 교환·state 검증·refresh 잠금만 구현했다. 품목 조회/공급가 쓰기, 토큰의 암호화 DB 저장은
   아직 없다(메모리 저장소는 재시작 시 소실). `VariantGateway`는 여전히 인터페이스와 fixture 구현만 있다.
 - 실제 테스트몰에서 authorize→code→token 전체 흐름을 아직 실행하지 않았다. scope 승인·`shop_no`/`user_id`

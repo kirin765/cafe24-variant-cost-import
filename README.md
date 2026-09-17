@@ -20,7 +20,7 @@ npm run dev           # http://localhost:3000
 | 경로 | 용도 |
 |---|---|
 | `/` | 소개·매칭·검증 규칙 |
-| `/demo` | 몰·합성 파일(또는 직접 올린 CSV) 선택 → 검증·변경 미리보기·행별 오류·명세 내보내기 |
+| `/demo` | 몰·합성 파일(또는 직접 올린 CSV) 선택 → 검증·변경 미리보기·행별 오류·명세 내보내기. **현재 상품목록 파일**을 올리면 그 목록을 실제 매칭 기준으로 사용 |
 | `/` + launch 파라미터 | `hmac`·`mall_id`가 있으면 `src/proxy.ts`가 launch 경로로 307 |
 | `/api/cafe24/launch` | Cafe24 앱 실행 진입점. `hmac`을 검증하고 `mall_id`·`shop_no`를 보존해 start로 302 |
 | `/api/cafe24/oauth/start` | Cafe24 authorize로 302 (state 서명 쿠키 발급, `?mall_id=` 필요/기본값, `shop_no` 전달) |
@@ -29,9 +29,9 @@ npm run dev           # http://localhost:3000
 ## 검증
 
 ```bash
-npm test              # 단위 테스트 79개
+npm test              # 단위 테스트 83개
 npm run smoke         # 빌드 결과물을 임시 포트로 띄워 Chromium으로 25개 확인
-npm run e2e           # Playwright E2E 20개 (빌드 후 임시 포트에서 실행)
+npm run e2e           # Playwright E2E 21개 (빌드 후 임시 포트에서 실행)
 npm run verify        # lint → typecheck → test → build → smoke → e2e
 ```
 
@@ -48,6 +48,7 @@ src/features/imports/
   validate.ts         금액 파싱·정확 매칭·중복/미매칭 오류·변경 계산·집계
   preview.ts          미리보기 조립, 확정 차단 사유, 검토/변경/JSON 명세 출력
   hash.ts             파일 내용 해시( 미리보기 버전 연결)
+  platform-snapshot.ts 업로드한 현재 상품목록(상품코드·공급가)을 매칭용 품목으로 변환
 src/lib/cafe24/
   gateway.ts          VariantGateway 인터페이스 + FixtureVariantGateway
   env.ts              CAFE24_* 환경변수 읽기·검사
@@ -81,6 +82,9 @@ e2e/                  Playwright E2E
 - **행 판정**: 매칭 성공 + 값 유효일 때만 `changed`/`unchanged`로 나눈다. 그 외는 `error`다.
 - **미리보기 연결**: 파일 해시로 미리보기 버전을 식별한다. 파일이 바뀌면 해시가 달라져 이전 확정과
   연결되지 않는다.
+- **매칭 기준 목록**: 데모는 기본적으로 합성 품목을 쓰지만, **현재 상품목록 파일**(Cafe24 상품목록
+  내보내기)을 올리면 그 파일의 `상품코드`·`공급가`로 품목을 만들어 실제 코드와 매칭한다. 이때 상품코드가
+  비었거나 공급가를 읽지 못한 행은 건너뛰고 몇 행을 건너뛰었는지 표시한다. 실제 품목 값은 여전히 바뀌지 않는다.
 - **안전성**: 원가 데이터는 영업정보다. 일반 로그에 원가·원본 파일을 출력하지 않고, 실제 API 호출·쓰기가
   없으며, 확정 안내에 무쓰기를 명시한다.
 

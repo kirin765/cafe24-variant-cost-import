@@ -94,6 +94,31 @@ test("Cafe24 상품목록 형식을 상품코드로 매칭하고 4500.00을 정�
   await expect(page.getByRole("heading", { name: "검증 통과" })).toBeVisible();
 });
 
+test("현재 상품목록 파일을 올리면 실제 상품코드로 매칭한다", async ({ page }) => {
+  await page.getByLabel("현재 상품목록 파일 (선택)").setInputFiles({
+    name: "current-products.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(
+      "상품코드,자체 상품코드,상품명,소비자가,공급가,판매가\n" +
+        "P9000001,,합성 상품 1,5000.00,4500.00,5000.00\n" +
+        "P9000002,,합성 상품 2,10000.00,9000.00,10000.00\n" +
+        "P9000003,,합성 상품 3,3000.00,2000.00,3000.00\n",
+    ),
+  });
+  await expect(page.getByTestId("platform-status")).toContainText("매칭 품목 3개");
+
+  await page.getByLabel("CSV 직접 올리기").setInputFiles({
+    name: "target.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("variant_code,supply_price\nP9000002,9500\nP9000003,2000\n"),
+  });
+  await expect(count(page, "count-total")).toHaveText("2");
+  await expect(count(page, "count-matched")).toHaveText("2");
+  await expect(count(page, "count-changed")).toHaveText("1");
+  await expect(count(page, "count-unchanged")).toHaveText("1");
+  await expect(count(page, "count-errors")).toHaveText("0");
+});
+
 test("직접 올린 CSV도 같은 검증을 거친다", async ({ page }) => {
   await page.getByLabel("CSV 직접 올리기").setInputFiles({
     name: "uploaded.csv",

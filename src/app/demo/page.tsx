@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { buildPreview, buildUnappliedNotice, canConfirm, toChangeSpecCsv, toManifest, toReviewCsv } from "@/features/imports/preview";
+import { buildPlatformSnapshot } from "@/features/imports/platform-snapshot";
 import { SUPPLY_CSV_FORMAT_LABELS } from "@/features/imports/model";
 import type { ImportPreview, ImportRow, PlatformVariant } from "@/features/imports/model";
 import { FixtureVariantGateway } from "@/lib/cafe24/gateway";
@@ -124,6 +125,8 @@ export default function DemoPage() {
     variants: PlatformVariant[];
   } | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [platformFile, setPlatformFile] = useState<{ fileName: string; text: string } | null>(null);
+  const [platformError, setPlatformError] = useState<string | null>(null);
   const [confirmedHash, setConfirmedHash] = useState<string | null>(null);
 
   const shop = findShop(tenantId);
@@ -144,7 +147,14 @@ export default function DemoPage() {
     };
   }, [shop]);
 
-  const variants = variantState && variantState.tenantId === tenantId ? variantState.variants : null;
+  const platformSnapshot = useMemo(() => {
+    if (!platformFile || !shop) return null;
+    return buildPlatformSnapshot({ shop, text: platformFile.text });
+  }, [platformFile, shop]);
+
+  const fixtureVariants =
+    variantState && variantState.tenantId === tenantId ? variantState.variants : null;
+  const variants = platformSnapshot ? platformSnapshot.variants : fixtureVariants;
 
   const source = useMemo(() => {
     if (uploaded) return uploaded;
@@ -178,6 +188,19 @@ export default function DemoPage() {
     }
   }
 
+  async function handlePlatformUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      setPlatformFile({ fileName: file.name, text });
+      setPlatformError(null);
+      setConfirmedHash(null);
+    } catch {
+      setPlatformError("현재 상품목록 파일을 읽지 못했습니다.");
+    }
+  }
+
   function selectSample(id: string) {
     setFileId(id);
     setUploaded(null);
@@ -202,7 +225,7 @@ export default function DemoPage() {
         </Link>
       </div>
 
-      <section className="mt-6 grid gap-4 md:grid-cols-3">
+      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <label className="block text-sm">
           <span className="font-semibold">대상 몰</span>
           <select
@@ -245,6 +268,16 @@ export default function DemoPage() {
             onChange={handleUpload}
           />
         </label>
+
+        <label className="block text-sm">
+          <span className="font-semibold">현재 상품목록 파일 (선택)</span>
+          <input
+            className="mt-1 w-full rounded border border-neutral-300 bg-white px-2 py-1 text-sm"
+            type="file"
+            accept=".csv,text/csv"
+            onChange={handlePlatformUpload}
+          />
+        </label>
       </section>
 
       <p className="mt-3 text-xs text-neutral-500">
@@ -255,6 +288,43 @@ export default function DemoPage() {
             : "합성 파일을 고르세요."}
       </p>
       {uploadError ? <p className="mt-1 text-xs text-red-700">{uploadError}</p> : null}
+
+      {platformFile && platformSnapshot ? (
+        <div className="mt-2 rounded border border-neutral-200 bg-white p-2 text-xs text-neutral-600" data-testid="platform-status">
+          <p>
+            현재 상품목록: <span className="font-mono">{platformFile.fileName}</span> · 형식{" "}
+            {platformSnapshot.format
+              ? SUPPLY_CSV_FORMAT_LABELS[platformSnapshot.format]
+              : "알 수 없음"}{" "}
+            · 매칭 품목 {platformSnapshot.variants.length}개
+            {platformSnapshot.skipped.length > 0
+              ? ` · 건너뜀 ${platformSnapshot.skipped.length}개`
+              : ""}
+          </p>
+          {platformSnapshot.fileIssues.map((entry, index) => (
+            <p key={`${entry.code}-${index}`} className="text-red-700">
+              [파일] {entry.message}
+            </p>
+          ))}
+          {platformSnapshot.skipped.slice(0, 5).map((entry) => (
+            <p key={`${entry.line}-${entry.variantCode}`} className="text-amber-700">
+              {entry.line}행{entry.variantCode ? ` ${entry.variantCode}` : ""}: {entry.reason}
+            </p>
+          ))}
+          <button
+            type="button"
+            className="mt-1 rounded border border-neutral-300 bg-white px-2 py-0.5 font-semibold text-neutral-700"
+            onClick={() => {
+              setPlatformFile(null);
+              setPlatformError(null);
+              setConfirmedHash(null);
+            }}
+          >
+            현재 목록 비우기
+          </button>
+        </div>
+      ) : null}
+      {platformError ? <p className="mt-1 text-xs text-red-700">{platformError}</p> : null}
 
       {!shop ? (
         <p className="mt-8 text-sm text-neutral-600">대상 몰을 찾지 못했습니다.</p>
