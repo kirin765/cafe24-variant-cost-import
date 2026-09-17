@@ -134,3 +134,45 @@ describe("Cafe24 상품목록 형식", () => {
     expect(result.fileIssues[0]?.code).toBe("file_header");
   });
 });
+
+describe("Cafe24 업로드 양식 헤더 호환", () => {
+  it("공백이 있는 업로드 기본양식 헤더도 인식한다", () => {
+    const text = [
+      '"상품 코드","자체 상품 코드",진열 상태,판매 상태,상품명,소비자가,공급가,상품가,판매가',
+      '"P000000I","",Y,Y,샘플상품 1,5000.00,4500.00,4500.00,5000.00',
+      "",
+    ].join("\n");
+    const result = parseSupplyCsv(text);
+    expect(result.format).toBe("cafe24-product");
+    expect(result.fileIssues).toEqual([]);
+    expect(result.rows[0]).toMatchObject({
+      variantCode: "P000000I",
+      rawSupplyPrice: "4500",
+      sourceProductName: "샘플상품 1",
+    });
+  });
+
+  it("공급가 열이 없으면 이유를 남기고 거부한다 (옵션/재고 초기화 양식)", () => {
+    const text = [
+      "상품코드,상품명,옵션사용,품목 구성방식,옵션 표시방식,옵션입력,옵션 스타일,버튼이미지 설정,색상 설정,추가입력옵션,추가입력옵션 명칭,추가입력옵션 선택/필수여부,입력글자수(자)",
+      'P000000I,샘플상품 1,Y,T,C,"색상{블랙|화이트}//사이즈{S|M}",S,,,,,,',
+      "",
+    ].join("\n");
+    const result = parseSupplyCsv(text);
+    expect(result.format).toBeNull();
+    expect(result.rows).toEqual([]);
+    expect(result.fileIssues[0]?.code).toBe("file_header");
+    expect(result.fileIssues[0]?.message).toContain("공급가");
+  });
+
+  it("재고 정보 업로드 양식(옵션 추가금액만 있음)도 거부한다", () => {
+    const text = [
+      "상품코드,상품명,판매가,품목코드,품목명,재고수량,진열여부,판매여부,옵션 추가금액,총 누적판매량",
+      "P000000I,샘플상품 1,5000,P000000I-001,블랙/S,10,T,T,0,0",
+      "",
+    ].join("\n");
+    const result = parseSupplyCsv(text);
+    expect(result.format).toBeNull();
+    expect(result.fileIssues[0]?.message).toContain("공급가");
+  });
+});

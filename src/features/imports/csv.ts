@@ -110,13 +110,25 @@ function normalizeHeaderCell(value: string): string {
   return value.trim().toLowerCase();
 }
 
+export function normalizeHeaderKey(value: string): string {
+  return value.replace(/\s+/g, "").toLowerCase();
+}
+
+export function headerHasCafe24Code(headerValues: string[]): boolean {
+  return headerValues.map(normalizeHeaderKey).includes(normalizeHeaderKey(CAFE24_CODE_HEADER));
+}
+
 export function detectSupplyCsvFormat(headerValues: string[]): SupplyCsvFormat | null {
-  const header = headerValues.map(normalizeHeaderCell);
+  const cells = headerValues.map(normalizeHeaderCell);
   const simple =
-    header.length === EXPECTED_HEADER.length &&
-    EXPECTED_HEADER.every((name, index) => header[index] === name);
+    cells.length === EXPECTED_HEADER.length &&
+    EXPECTED_HEADER.every((name, index) => cells[index] === name);
   if (simple) return "simple";
-  if (header.includes(CAFE24_CODE_HEADER) && header.includes(CAFE24_PRICE_HEADER)) {
+  const keys = headerValues.map(normalizeHeaderKey);
+  if (
+    keys.includes(normalizeHeaderKey(CAFE24_CODE_HEADER)) &&
+    keys.includes(normalizeHeaderKey(CAFE24_PRICE_HEADER))
+  ) {
     return "cafe24-product";
   }
   return null;
@@ -132,11 +144,11 @@ function cafe24ColumnIndexes(headerValues: string[]): {
   price: number;
   name: number;
 } {
-  const header = headerValues.map(normalizeHeaderCell);
+  const header = headerValues.map(normalizeHeaderKey);
   return {
-    code: header.indexOf(CAFE24_CODE_HEADER),
-    price: header.indexOf(CAFE24_PRICE_HEADER),
-    name: header.indexOf("상품명"),
+    code: header.indexOf(normalizeHeaderKey(CAFE24_CODE_HEADER)),
+    price: header.indexOf(normalizeHeaderKey(CAFE24_PRICE_HEADER)),
+    name: header.indexOf(normalizeHeaderKey("상품명")),
   };
 }
 
@@ -162,15 +174,12 @@ export function parseSupplyCsv(
   const headerValues = records[0].values;
   const format = detectSupplyCsvFormat(headerValues);
   if (!format) {
-    fileIssues.push(
-      issue(
-        "file_header",
-        "error",
-        `헤더는 ${EXPECTED_HEADER.join(",")} 여야 합니다. (또는 Cafe24 상품목록의 ${CAFE24_CODE_HEADER}·${CAFE24_PRICE_HEADER} 열) 받은 값: ${headerValues
+    const message = headerHasCafe24Code(headerValues)
+      ? `이 파일에는 ${CAFE24_PRICE_HEADER} 열이 없어 공급가를 가져올 수 없습니다. (${CAFE24_CODE_HEADER} 열만 있음)`
+      : `헤더는 ${EXPECTED_HEADER.join(",")} 여야 합니다. (또는 Cafe24 상품목록의 ${CAFE24_CODE_HEADER}·${CAFE24_PRICE_HEADER} 열) 받은 값: ${headerValues
           .map((value) => JSON.stringify(value))
-          .join(",")}`,
-      ),
-    );
+          .join(",")}`;
+    fileIssues.push(issue("file_header", "error", message));
     return { format: null, rows: [], fileIssues };
   }
 
