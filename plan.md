@@ -2,7 +2,7 @@
 
 - 작성일: 2026-09-16
 - 프로젝트: `cafe24-variant-cost-import` — 후보 4
-- 상태: A. 2시간 데모 구현·자동 검증 완료(2026-09-16). B. OAuth 콜백·토큰 교환·launch 서명·Cafe24 상품목록 CSV adapter·자동 검증(2026-09-17). 품목 쓰기 검증·C 미착수
+- 상태: A. 2시간 데모 구현·자동 검증 완료(2026-09-16). B. OAuth 콜백·토큰 교환·launch 서명·Cafe24 상품목록 CSV adapter·Admin API 상품 조회·자동 검증(2026-09-17). 품목 쓰기 검증·C 미착수
 - 담당: Giwan(제품 선택·테스트몰 검증), 개발 세션(구현·자동 검증)
 
 ## 1. 목적과 근거
@@ -139,6 +139,7 @@ QA.md                   수동 검증표
 ### B. 한 품목 쓰기 검증 — 다음 상한 선기록
 
 - [x] OAuth 콜백·토큰 교환 스캐폴드. — `src/lib/cafe24/{env,oauth,token-store}.ts`, `src/app/api/cafe24/oauth/{start,callback}/route.ts`, 단위 테스트 15개, E2E 4개 (2026-09-17)
+- [x] Admin API 상품 조회(Bearer)와 콜백 조회 스냅샷. — `src/lib/cafe24/admin.ts`, `token-store.ts`, 단위 테스트 18개 (2026-09-17)
 - [ ] 앱/권한·테스트몰 전제 확인, 한 품목 before snapshot.
 - [ ] 쓰기·재조회·복원 adapter와 실패 시나리오 구현.
 - [ ] 읽기/쓰기 제약으로 불가능하면 원가 보고서 등 다른 제품으로 자동 전환하지 않고 결과 기록.

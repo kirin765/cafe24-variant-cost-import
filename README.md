@@ -29,7 +29,7 @@ npm run dev           # http://localhost:3000
 ## 검증
 
 ```bash
-npm test              # 단위 테스트 86개
+npm test              # 단위 테스트 94개
 npm run smoke         # 빌드 결과물을 임시 포트로 띄워 Chromium으로 25개 확인
 npm run e2e           # Playwright E2E 21개 (빌드 후 임시 포트에서 실행)
 npm run verify        # lint → typecheck → test → build → smoke → e2e
@@ -53,7 +53,8 @@ src/lib/cafe24/
   gateway.ts          VariantGateway 인터페이스 + FixtureVariantGateway
   env.ts              CAFE24_* 환경변수 읽기·검사
   oauth.ts            scope, state 서명/검증, authorize URL, 토큰 교환·refresh
-  token-store.ts      메모리 토큰 저장소 + refresh 잠금(스캐폴드)
+  admin.ts            Admin API 상품 조회(Bearer), 응답 파싱·공급가 정규화
+  token-store.ts      메모리 토큰·상품 스냅샷 저장소 + refresh 잠금(스캐폴드)
 src/app/api/cafe24/oauth/
   start/route.ts      CSRF state 쿠키 발급 후 authorize로 리다이렉트
   callback/route.ts   state 검증 → 토큰 교환 → 요약 페이지
@@ -104,7 +105,10 @@ e2e/                  Playwright E2E
 - 앱 실행(launch): 루트로 들어온 `hmac`·`mall_id`를 `src/proxy.ts`가 launch 경로로 넘기고,
   `verifyLaunchHmac`이 원본 쿼리 문자열에서 `hmac`을 뺀 값의 `base64(HMAC-SHA256)`를 클라이언트 시크릿으로
   검증한다. 검증에 쓰는 쿼리는 재조립하지 않고 요청 URL 그대로를 사용한다.
-- 아직 품목 조회·공급가 쓰기는 하지 않는다.
+- 콜백에서 토큰을 받은 뒤 `GET /api/v2/admin/products`로 상품을 조회해 메모리 스냅샷에 저장하고,
+  연결 결과 페이지에 조회한 상품 수와 공급가를 읽은 수만 표시한다(공급가 값은 노출하지 않음).
+- 아직 공급가 쓰기는 하지 않는다. 상품 조회는 `products`/`resource` 배열과 `supply_price`를 방어적으로
+  읽으며, 실제 응답 필드는 테스트몰에서 확정해야 한다(요청 시 `CAFE24_API_VERSION`을 `version`으로 전달).
 
 ## 다음 단계 (B/C)
 

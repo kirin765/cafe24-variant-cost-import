@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { listAdminProducts } from "@/lib/cafe24/admin";
 import { readCafe24Config } from "@/lib/cafe24/env";
 import {
   CAFE24_REQUIRED_SCOPES,
@@ -8,7 +9,7 @@ import {
   verifyOAuthState,
   type Cafe24Token,
 } from "@/lib/cafe24/oauth";
-import { TOKEN_STORE_NOTE, saveToken } from "@/lib/cafe24/token-store";
+import { TOKEN_STORE_NOTE, saveProductSnapshot, saveToken } from "@/lib/cafe24/token-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -119,5 +120,23 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   saveToken(check.state.mallId, token);
-  return clearStateCookie(page("Cafe24 연결 완료", describeToken(token), 200));
+
+  let productSummary: string;
+  try {
+    const products = await listAdminProducts({
+      mallId: check.state.mallId,
+      accessToken: token.accessToken,
+      apiVersion: process.env.CAFE24_API_VERSION?.trim() || null,
+    });
+    saveProductSnapshot(check.state.mallId, products);
+    const withPrice = products.filter((entry) => entry.supplyPrice !== null).length;
+    productSummary = `<p>상품 ${products.length}개를 조회했습니다. 공급가를 읽은 상품 ${withPrice}개.</p>`;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "알 수 없는 오류";
+    productSummary = `<p style="color:#b45309">상품 조회는 실패했습니다. ${escapeHtml(message)}</p>`;
+  }
+
+  return clearStateCookie(
+    page("Cafe24 연결 완료", `${describeToken(token)}${productSummary}`, 200),
+  );
 }

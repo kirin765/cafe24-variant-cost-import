@@ -28,7 +28,7 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 `npm run e2e`는 `e2e/`의 Playwright 스펙 8개를 별도 포트(`E2E_PORT`, 기본 3112)에서 실행한다.
 `E2E_BASE_URL`을 주면 로컬 서버를 띄우지 않고 그 URL(예: Vercel 배포)을 검사한다.
 
-### 단위 테스트 — `npm test` (86개, 2026-09-17 통과)
+### 단위 테스트 — `npm test` (94개, 2026-09-17 통과)
 
 | 파일 | 덮는 내용 |
 |---|---|
@@ -37,7 +37,8 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 | `src/features/imports/preview.test.ts` | 정상/오류/헤더 파일 집계와 차단, 몰별 격리, 품목 없는 몰, 파일 해시 안정성, 확정 가능 여부, 검토/변경/JSON 명세 |
 | `src/lib/cafe24/gateway.test.ts` | fixture gateway의 몰별 품목 필터, 빈 몰 |
 | `src/lib/cafe24/oauth.test.ts` | state 서명·변조·만료·mall_id 검증, authorize URL, 토큰 파싱·필수값, Basic 인증 토큰 교환·오류, 환경변수 누락 |
-| `src/lib/cafe24/token-store.test.ts` | refresh 결과(회전된 refresh token) 저장, 동시 refresh 1회 병합, 실패 후 잠금 해제 |
+| `src/lib/cafe24/token-store.test.ts` | refresh 결과(회전된 refresh token) 저장, 동시 refresh 1회 병합, 실패 후 잠금 해제, 상품 스냅샷 저장·조회 |
+| `src/lib/cafe24/admin.test.ts` | 상품 응답 파싱(`products`/`resource`), 공급가 정규화·비정수 null, Bearer·limit/offset/shop_no/version 요청, 오류·잘못된 mall_id 거부 |
 | `src/lib/cafe24/launch.test.ts` | launch 쿼리에서 `hmac` 제거, 실제 Cafe24 launch 쿼리 서명 검증, 변조·값 변경·빈 서명 거부 |
 | `src/features/imports/platform-snapshot.test.ts` | 현재 상품목록(Cafe24 상품목록/단순)을 매칭용 품목으로 변환, 공급가·코드 결손 행 건너뛰기, 미지원 형식 거부 |
 
@@ -101,7 +102,7 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 | 앱 실행 진입 | App URL을 루트(`/`)로 두고 몰에서 앱 실행 | `hmac` 포함 launch 파라미터가 `proxy`→`launch`→`start`를 거쳐 authorize 동의 화면으로 이어진다 |
 | launch 서명 | `hmac`을 변조해 `/api/cafe24/launch` 호출 | 403으로 거부된다 |
 | OAuth 시작 | `CAFE24_*` 설정 후 `/api/cafe24/oauth/start?mall_id=<몰>` | `https://<몰>.cafe24api.com/api/v2/oauth/authorize?...&scope=mall.read_product mall.write_product mall.read_store`로 302 |
-| OAuth 콜백 | 인증 승인 후 callback | 연결 완료 페이지에 mall·scope·만료 시각이 보이고 토큰 값은 보이지 않는다. `state` 불일치·만료는 400 |
+| OAuth 콜백 | 인증 승인 후 callback | 연결 완료 페이지에 mall·scope·만료 시각, 조회한 상품 수·공급가를 읽은 수가 보이고 토큰·공급가 값은 보이지 않는다. `state` 불일치·만료는 400 |
 | OAuth 미설정 | `CAFE24_*` 없이 start 호출 | 누락된 환경변수를 나열한 500 |
 
 ## 알려진 한계 (B 단계에서 확인 필요)
@@ -111,8 +112,12 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 - 업로드 기본양식은 실제 파일을 받아 검증하지 않았다. 헤더는 공식 문서 표기를 근거로 공백 무시 매칭만 넣었다.
   `옵션/재고 초기화 양식`·`재고 정보 업로드 양식`은 공급가 열이 없어 거부하는 것이 의도된 동작이다.
 - 현재 상품목록 업로드는 파일 기반이다. 실제 서비스에서는 Cafe24 API 조회로 대체한다(토큰 영속 저장 필요).
-- OAuth 콜백·토큰 교환·state 검증·refresh 잠금만 구현했다. 품목 조회/공급가 쓰기, 토큰의 암호화 DB 저장은
-  아직 없다(메모리 저장소는 재시작 시 소실). `VariantGateway`는 여전히 인터페이스와 fixture 구현만 있다.
+- OAuth 콜백·토큰 교환·state 검증·refresh 잠금과 Admin API 상품 조회까지 구현했다. 공급가 쓰기, 토큰·상품
+  스냅샷의 암호화 DB 저장은 아직 없다(메모리 저장소는 재시작·서버리스 인스턴스 교체 시 소실). 따라서 서버리스에서는
+  콜백 요청 안에서의 조회만 보장되고, 이후 요청은 토큰을 찾지 못할 수 있다. `VariantGateway`는 여전히 인터페이스와
+  fixture 구현만 있다.
+- 상품 조회 응답 필드(`products` vs `resource`, `supply_price`, `shop_no`)와 버전 파라미터는 테스트몰에서
+  실제 호출로 확정해야 한다. 공급가는 상품 단위이며 옵션(품목)별 공급가 조회는 별도 엔드포인트 확인이 필요하다.
 - 실제 테스트몰에서 authorize→code→token 전체 흐름을 아직 실행하지 않았다. scope 승인·`shop_no`/`user_id`
   값은 문서 기반이다.
 - `product_no`/`variant_code`/`shop_no`의 정확한 관계와 금액 정밀도·허용 범위는 미확인이다. 데모는

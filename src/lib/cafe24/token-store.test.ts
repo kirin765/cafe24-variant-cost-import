@@ -1,8 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  clearProductSnapshot,
   clearToken,
+  getProductSnapshot,
   getToken,
   refreshStoredToken,
+  saveProductSnapshot,
   saveToken,
   withRefreshLock,
 } from "@/lib/cafe24/token-store";
@@ -28,6 +31,17 @@ const params = {
 
 afterEach(() => {
   clearToken("demo");
+  clearProductSnapshot("demo");
+});
+
+describe("product snapshot", () => {
+  it("저장한 상품 목록을 돌려주고 없으면 null", () => {
+    expect(getProductSnapshot("demo")).toBeNull();
+    saveProductSnapshot("demo", [{ productNo: "1", productName: "a", supplyPrice: 1000 }]);
+    expect(getProductSnapshot("demo")).toHaveLength(1);
+    clearProductSnapshot("demo");
+    expect(getProductSnapshot("demo")).toBeNull();
+  });
 });
 
 describe("refreshStoredToken", () => {

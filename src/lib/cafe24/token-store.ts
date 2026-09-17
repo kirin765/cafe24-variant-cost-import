@@ -1,3 +1,4 @@
+import type { AdminProduct } from "./admin";
 import { refreshAccessToken, type Cafe24Token, type FetchLike, type RefreshAccessTokenParams } from "./oauth";
 
 interface StoredToken {
@@ -6,6 +7,7 @@ interface StoredToken {
 }
 
 const tokens = new Map<string, StoredToken>();
+const productSnapshots = new Map<string, AdminProduct[]>();
 const refreshLocks = new Map<string, Promise<Cafe24Token>>();
 
 export const TOKEN_STORE_NOTE =
@@ -29,6 +31,18 @@ export function clearToken(mallId: string): void {
 
 export function listMallIds(): string[] {
   return [...tokens.keys()];
+}
+
+export function saveProductSnapshot(mallId: string, products: AdminProduct[]): void {
+  productSnapshots.set(mallId, products);
+}
+
+export function getProductSnapshot(mallId: string): AdminProduct[] | null {
+  return productSnapshots.get(mallId) ?? null;
+}
+
+export function clearProductSnapshot(mallId: string): void {
+  productSnapshots.delete(mallId);
 }
 
 export function withRefreshLock(
