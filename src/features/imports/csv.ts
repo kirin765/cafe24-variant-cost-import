@@ -1,4 +1,10 @@
-import { CSV_LIMITS, issue, type CsvRow, type ImportIssue } from "./model";
+import {
+  CSV_LIMITS,
+  issue,
+  type CsvRow,
+  type ImportIssue,
+  type SupplyCsvFormat,
+} from "./model";
 
 export interface ParsedCsvRecord {
   values: string[];
@@ -6,11 +12,14 @@ export interface ParsedCsvRecord {
 }
 
 export interface SupplyCsvParseResult {
+  format: SupplyCsvFormat | null;
   rows: CsvRow[];
   fileIssues: ImportIssue[];
 }
 
 const EXPECTED_HEADER = ["variant_code", "supply_price"] as const;
+const CAFE24_CODE_HEADER = "상품코드";
+const CAFE24_PRICE_HEADER = "공급가";
 
 function byteLength(text: string): number {
   return new TextEncoder().encode(text).length;
@@ -97,7 +106,33 @@ function isBlankRecord(record: ParsedCsvRecord): boolean {
   return record.values.length === 1 && record.values[0] === "";
 }
 
-export function parseSupplyPriceCsv(
+function normalizeHeaderCell(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+export function detectSupplyCsvFormat(headerValues: string[]): SupplyCsvFormat | null {
+  const header = headerValues.map(normalizeHeaderCell);
+  const simple =
+    header.length === EXPECTED_HEADER.length &&
+    EXPECTED_HEADER.every((name, index) => header[index] === name);
+  if (simple) return "simple";
+  if (header.includes(CAFE24_CODE_HEADER) && header.includes(CAFE24_PRICE_HEADER)) {
+    return "cafe24-product";
+  }
+  return null;
+}
+
+export function normalizeCafe24Amount(raw: string): string {
+  const match = /^(\d+)\.0+$/.exec(raw);
+  return match ? match[1] : raw;
+}
+
+function cafe24ColumnIndexes(headerValues: string[]): { code: number; price: number } {
+  const header = headerValues.map(normalizeHeaderCell);
+  return { code: header.indexOf(CAFE24_CODE_HEADER), price: header.indexOf(CAFE24_PRICE_HEADER) };
+}
+
+export function parseSupplyCsv(
   text: string,
   limits: { maxBytes: number; maxRows: number } = CSV_LIMITS,
 ): SupplyCsvParseResult {
@@ -107,35 +142,32 @@ export function parseSupplyPriceCsv(
     fileIssues.push(
       issue("file_too_large", "error", `파일이 ${limits.maxBytes}바이트를 넘습니다 (${bytes}바이트).`),
     );
-    return { rows: [], fileIssues };
+    return { format: null, rows: [], fileIssues };
   }
 
   const records = parseCsvRecords(text).filter((record) => !isBlankRecord(record));
   if (records.length === 0) {
     fileIssues.push(issue("file_header", "error", "CSV 헤더 행을 찾지 못했습니다."));
-    return { rows: [], fileIssues };
+    return { format: null, rows: [], fileIssues };
   }
 
-  const header = records[0].values.map((value) => value.trim().toLowerCase());
-  const headerMatches =
-    header.length === EXPECTED_HEADER.length &&
-    EXPECTED_HEADER.every((name, index) => header[index] === name);
-  if (!headerMatches) {
+  const headerValues = records[0].values;
+  const format = detectSupplyCsvFormat(headerValues);
+  if (!format) {
     fileIssues.push(
       issue(
         "file_header",
         "error",
-        `헤더는 ${EXPECTED_HEADER.join(",")} 여야 합니다. 받은 값: ${records[0].values
+        `헤더는 ${EXPECTED_HEADER.join(",")} 여야 합니다. (또는 Cafe24 상품목록의 ${CAFE24_CODE_HEADER}·${CAFE24_PRICE_HEADER} 열) 받은 값: ${headerValues
           .map((value) => JSON.stringify(value))
           .join(",")}`,
       ),
     );
-    return { rows: [], fileIssues };
+    return { format: null, rows: [], fileIssues };
   }
 
   const dataRecords = records.slice(1);
-  const overflow = dataRecords.length > limits.maxRows;
-  if (overflow) {
+  if (dataRecords.length > limits.maxRows) {
     fileIssues.push(
       issue(
         "file_too_many_rows",
@@ -144,13 +176,26 @@ export function parseSupplyPriceCsv(
       ),
     );
   }
+  const capped = dataRecords.slice(0, limits.maxRows);
 
-  const rows: CsvRow[] = dataRecords.slice(0, limits.maxRows).map((record) => ({
+  if (format === "simple") {
+    const rows: CsvRow[] = capped.map((record) => ({
+      line: record.line,
+      variantCode: record.values[0] ?? "",
+      rawSupplyPrice: record.values[1] ?? "",
+      fieldCount: record.values.length,
+    }));
+    return { format, rows, fileIssues };
+  }
+
+  const { code, price } = cafe24ColumnIndexes(headerValues);
+  const expectedFieldCount = headerValues.length;
+  const rows: CsvRow[] = capped.map((record) => ({
     line: record.line,
-    variantCode: record.values[0] ?? "",
-    rawSupplyPrice: record.values[1] ?? "",
+    variantCode: record.values[code] ?? "",
+    rawSupplyPrice: normalizeCafe24Amount(record.values[price] ?? ""),
     fieldCount: record.values.length,
+    expectedFieldCount,
   }));
-
-  return { rows, fileIssues };
+  return { format, rows, fileIssues };
 }

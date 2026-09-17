@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { buildPreview, buildUnappliedNotice, canConfirm, toChangeSpecCsv, toManifest, toReviewCsv } from "@/features/imports/preview";
+import { SUPPLY_CSV_FORMAT_LABELS } from "@/features/imports/model";
 import type { ImportPreview, ImportRow, PlatformVariant } from "@/features/imports/model";
 import { FixtureVariantGateway } from "@/lib/cafe24/gateway";
 import { downloadTextFile } from "@/lib/download";
@@ -278,6 +279,9 @@ export default function DemoPage() {
               <span className="font-mono">{preview.fileHash.slice(0, 12)}</span> · 파일명{" "}
               <span className="font-mono">{preview.fileName}</span> · 이 몰 품목{" "}
               {variants.length}개
+            </p>
+            <p data-testid="csv-format" className="mt-1">
+              형식: {SUPPLY_CSV_FORMAT_LABELS[preview.format]}
             </p>
           </section>
 

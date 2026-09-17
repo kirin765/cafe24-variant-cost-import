@@ -6,6 +6,7 @@ import {
   type PlatformVariant,
   type PreviewCounts,
   type RowVerdict,
+  type SupplyCsvFormat,
 } from "./model";
 
 const PRICE_PATTERN = /^\d+$/;
@@ -61,9 +62,17 @@ export function parseSupplyPrice(raw: string): PriceParseResult {
 export interface ValidateInput {
   rows: CsvRow[];
   variants: PlatformVariant[];
+  format?: SupplyCsvFormat;
 }
 
-export function validateImportRows({ rows, variants }: ValidateInput): ImportRow[] {
+const DEFAULT_FIELD_COUNT = 2;
+
+export function validateImportRows({
+  rows,
+  variants,
+  format = "simple",
+}: ValidateInput): ImportRow[] {
+  const codeLabel = format === "cafe24-product" ? "상품코드" : "variant_code";
   const codeCounts = new Map<string, number>();
   for (const row of rows) {
     if (row.variantCode.length === 0) continue;
@@ -84,21 +93,22 @@ export function validateImportRows({ rows, variants }: ValidateInput): ImportRow
     const issues: ImportIssue[] = [];
     const code = row.variantCode;
 
-    if (row.fieldCount !== 2) {
+    const expectedFieldCount = row.expectedFieldCount ?? DEFAULT_FIELD_COUNT;
+    if (row.fieldCount !== expectedFieldCount) {
       issues.push(
         issue(
           "malformed_row",
           "error",
-          `열은 variant_code,supply_price 2개여야 합니다. 받은 열: ${row.fieldCount}개`,
+          `열 개수가 맞지 않습니다. 기대 ${expectedFieldCount}개, 받은 ${row.fieldCount}개`,
         ),
       );
     }
 
     if (code.length === 0) {
-      issues.push(issue("missing_code", "error", "variant_code가 비어 있습니다."));
+      issues.push(issue("missing_code", "error", `${codeLabel}가 비어 있습니다.`));
     } else if ((codeCounts.get(code) ?? 0) > 1) {
       issues.push(
-        issue("duplicate_code", "error", "파일 안에 같은 variant_code가 두 번 이상 있습니다."),
+        issue("duplicate_code", "error", `파일 안에 같은 ${codeLabel}가 두 번 이상 있습니다.`),
       );
     }
 
@@ -116,7 +126,7 @@ export function validateImportRows({ rows, variants }: ValidateInput): ImportRow
       const variant = variantByCode.get(code);
       if (!variant) {
         issues.push(
-          issue("unmatched_code", "error", "이 몰의 품목에서 variant_code를 찾지 못했습니다."),
+          issue("unmatched_code", "error", `이 몰의 품목에서 ${codeLabel}를 찾지 못했습니다.`),
         );
       } else {
         matched = true;
@@ -129,7 +139,7 @@ export function validateImportRows({ rows, variants }: ValidateInput): ImportRow
             issue(
               "duplicate_platform_code",
               "error",
-              "이 몰에 같은 variant_code 품목이 둘 이상이라 자동 매칭할 수 없습니다.",
+              `이 몰에 같은 ${codeLabel} 품목이 둘 이상이라 자동 매칭할 수 없습니다.`,
             ),
           );
         }

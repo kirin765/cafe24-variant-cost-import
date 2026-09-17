@@ -4,8 +4,9 @@
 로컬 데모입니다. 판매가 예약·재고 수정과는 다른 작업입니다.
 
 `plan.md`의 **A. 2시간 데모**(합성 데이터)가 완료되어 있고, **B. 한 품목 쓰기 검증**의 첫 조각으로
-Cafe24 OAuth 콜백·토큰 교환을 스캐폴딩했습니다. 품목/옵션 조회·공급가 쓰기와 DB 저장은 아직 없으며,
-어느 단계에서도 실제 품목 값을 바꾸지 않습니다.
+Cafe24 OAuth 콜백·토큰 교환·앱 실행(launch) 서명 검증을 스캐폴딩했습니다. CSV는 자체 형식
+(`variant_code,supply_price`)과 **Cafe24 상품목록 내보내기 형식**(`상품코드`·`공급가`)을 자동 판별해
+읽습니다. 품목/옵션 조회·공급가 쓰기와 DB 저장은 아직 없으며, 어느 단계에서도 실제 품목 값을 바꾸지 않습니다.
 
 ## 실행
 
@@ -28,9 +29,9 @@ npm run dev           # http://localhost:3000
 ## 검증
 
 ```bash
-npm test              # 단위 테스트 75개
+npm test              # 단위 테스트 79개
 npm run smoke         # 빌드 결과물을 임시 포트로 띄워 Chromium으로 25개 확인
-npm run e2e           # Playwright E2E 19개 (빌드 후 임시 포트에서 실행)
+npm run e2e           # Playwright E2E 20개 (빌드 후 임시 포트에서 실행)
 npm run verify        # lint → typecheck → test → build → smoke → e2e
 ```
 
@@ -43,7 +44,7 @@ npm run verify        # lint → typecheck → test → build → smoke → e2e
 ```text
 src/features/imports/
   model.ts            CSV 행·품목·미리보기·이슈 타입과 파일 한도
-  csv.ts              UTF-8/BOM·인용부호·CRLF 지원 CSV parser, 헤더·행/바이트 한도 검사
+  csv.ts              UTF-8/BOM·인용부호·CRLF parser, 형식 자동 판별, Cafe24 상품목록 adapter, 한도 검사
   validate.ts         금액 파싱·정확 매칭·중복/미매칭 오류·변경 계산·집계
   preview.ts          미리보기 조립, 확정 차단 사유, 검토/변경/JSON 명세 출력
   hash.ts             파일 내용 해시( 미리보기 버전 연결)
@@ -65,7 +66,11 @@ e2e/                  Playwright E2E
 
 ## 설계 요약
 
-- **정확 매칭만**: `variant_code`의 플랫폼 코드 완전 일치만 사용한다. 상품명·옵션명은 검토 화면의
+- **형식 자동 판별**: 헤더가 `variant_code,supply_price`면 단순 형식, `상품코드`·`공급가` 열이 있으면
+  Cafe24 상품목록 형식으로 읽는다. 상품목록 형식은 `상품코드`를 매칭 키로 쓰고 `자체 상품코드`는 쓰지
+  않는다(현재 실데이터에서 비어 있음). `공급가`가 `4500.00`처럼 소수점 이하가 0이면 정수로
+  정규화하며, `4500.50`처럼 0이 아니면 오류로 남긴다.
+- **정확 매칭만**: 코드의 플랫폼 값 완전 일치만 사용한다. 상품명·옵션명은 검토 화면의
   참고 정보일 뿐 자동 매칭에 쓰지 않는다. 코드 앞자리 0과 문자열을 보존하고 내부 공백·문자 변형을
   자동 교정하지 않는다.
 - **금액 규칙**: 빈 공급가는 0으로 해석하지 않는다. 0원은 명시적 입력으로 허용하되 주의로 표시한다.

@@ -28,11 +28,11 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 `npm run e2e`는 `e2e/`의 Playwright 스펙 8개를 별도 포트(`E2E_PORT`, 기본 3112)에서 실행한다.
 `E2E_BASE_URL`을 주면 로컬 서버를 띄우지 않고 그 URL(예: Vercel 배포)을 검사한다.
 
-### 단위 테스트 — `npm test` (75개, 2026-09-17 통과)
+### 단위 테스트 — `npm test` (79개, 2026-09-17 통과)
 
 | 파일 | 덮는 내용 |
 |---|---|
-| `src/features/imports/csv.test.ts` | BOM·CRLF·인용부호 안 쉼표/개행/이중 인용부호, 물리적 행 번호, 헤더 불일치 거부, 행/바이트 한도, 열 개수, 앞자리 0 보존 |
+| `src/features/imports/csv.test.ts` | BOM·CRLF·인용부호 안 쉼표/개행/이중 인용부호, 물리적 행 번호, 헤더 불일치 거부, 행/바이트 한도, 열 개수, 앞자리 0 보존, Cafe24 상품목록 형식 판별·상품코드 매핑·`4500.00` 정규화 |
 | `src/features/imports/validate.test.ts` | 정수/0원/앞자리 0 허용, 빈값·음수·통화·천 단위·소수·지수·공백·문자·범위초과 거부, 변경/동일 구분, 파일 내 중복(값 동일 포함), 미매칭, 열 개수 불일치, 플랫폼 중복 코드, 집계 |
 | `src/features/imports/preview.test.ts` | 정상/오류/헤더 파일 집계와 차단, 몰별 격리, 품목 없는 몰, 파일 해시 안정성, 확정 가능 여부, 검토/변경/JSON 명세 |
 | `src/lib/cafe24/gateway.test.ts` | fixture gateway의 몰별 품목 필터, 빈 몰 |
@@ -70,12 +70,12 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 | 24 | 베타몰 미매칭 없음 | 통과 |
 | 25 | 품목 없는 몰은 전부 미매칭 | 통과 |
 
-### Playwright E2E — `npm run e2e` (19개, 2026-09-17 통과)
+### Playwright E2E — `npm run e2e` (20개, 2026-09-17 통과)
 
 | 파일 | 덮는 흐름 |
 |---|---|
 | `e2e/home.spec.ts` | 소개 화면의 흐름·규칙·미포함 범위, 데모 링크 이동 |
-| `e2e/demo.spec.ts` | 정상 파일 집계·확정 활성, 확정 안내, 검토/변경/JSON 다운로드, 오류 파일 차단과 행별 메시지, 잘못된 헤더 거부, 몰 전환 격리, 직접 올린 CSV 검증 |
+| `e2e/demo.spec.ts` | 정상 파일 집계·확정 활성, 확정 안내, 검토/변경/JSON 다운로드, 오류 파일 차단과 행별 메시지, 잘못된 헤더 거부, 몰 전환 격리, 직접 올린 CSV 검증, Cafe24 상품목록 형식 매칭·정규화 |
 | `e2e/oauth.spec.ts` | 루트 launch 파라미터 전달, launch hmac 검증(성공 302·실패 403·hmac 없음 허용), mall_id·shop_no 보존, authorize 302·state 쿠키·shop_no 전달, 빈 mall_id 기본값 대체, 잘못된 mall_id 400, state 없는 callback 400, 사용자 거부 400 |
 
 ## 수동 검증표
@@ -86,6 +86,7 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 |---|---|---|
 | `/demo` 몰 전환 | 알파/베타/감마 선택 | 알파 10개, 베타 2개, 감마 0개 품목으로 매칭 결과가 달라진다 |
 | `/demo` 직접 올리기 | 정상 CSV 업로드 | 업로드 파일명이 표시되고 같은 검증·미리보기가 재현된다 |
+| `/demo` Cafe24 상품목록 | Cafe24에서 내려받은 상품목록 CSV 업로드 | 형식이 "Cafe24 상품목록"으로 표시되고 `공급가`의 `.00`이 정규화된다. 이 몰 품목에 해당 상품코드가 없으면 미매칭으로 남는다 |
 | `/demo` 인용부호 파일 | 값에 쉼표·개행이 든 셀 업로드 | 값이 잘리지 않고 그대로 오류 판정된다 |
 | `/demo` 열 개수 오류 | `SKU-0001,4800,extra` 행 | 열 3개 오류로 표시되고 확정 불가 |
 | `/demo` 확정 | 정상 파일에서 `확정 (데모)` | 미리보기 버전·해시와 함께 "실제 API 호출은 하지 않았습니다" 안내 |
@@ -101,6 +102,8 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 
 ## 알려진 한계 (B 단계에서 확인 필요)
 
+- 실제 onnurimun 상품목록 내보내기 3개(88·92열)는 상품 단위이며 옵션/품목 코드가 없다. `상품코드` 기준
+  매칭만 가능하고, 옵션별 공급가를 다루려면 옵션·품목이 포함된 내보내기나 API 조회가 필요하다.
 - OAuth 콜백·토큰 교환·state 검증·refresh 잠금만 구현했다. 품목 조회/공급가 쓰기, 토큰의 암호화 DB 저장은
   아직 없다(메모리 저장소는 재시작 시 소실). `VariantGateway`는 여전히 인터페이스와 fixture 구현만 있다.
 - 실제 테스트몰에서 authorize→code→token 전체 흐름을 아직 실행하지 않았다. scope 승인·`shop_no`/`user_id`

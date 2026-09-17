@@ -1,4 +1,4 @@
-import { parseSupplyPriceCsv } from "./csv";
+import { parseSupplyCsv } from "./csv";
 import { hashText } from "./hash";
 import type { ImportPreview, ImportRow, PlatformVariant, ShopRef } from "./model";
 import { summarizeRows, validateImportRows } from "./validate";
@@ -33,8 +33,13 @@ export function collectBlockReasons(
 }
 
 export function buildPreview(input: BuildPreviewInput): ImportPreview {
-  const parsed = parseSupplyPriceCsv(input.text);
-  const rows = validateImportRows({ rows: parsed.rows, variants: input.variants });
+  const parsed = parseSupplyCsv(input.text);
+  const format = parsed.format ?? "simple";
+  const rows = validateImportRows({
+    rows: parsed.rows,
+    variants: input.variants,
+    format: parsed.format ?? undefined,
+  });
   const counts = summarizeRows(rows);
   const fileHash = hashText(input.text);
   const blockReasons = collectBlockReasons(parsed.fileIssues, rows);
@@ -44,6 +49,7 @@ export function buildPreview(input: BuildPreviewInput): ImportPreview {
     jobId: input.jobId ?? `job_${fileHash}`,
     shop: input.shop,
     fileName: input.fileName,
+    format,
     fileHash,
     createdAt,
     previewVersion: input.previewVersion ?? 1,
@@ -165,6 +171,7 @@ export function toManifest(preview: ImportPreview): string {
     createdAt: preview.createdAt,
     shop: preview.shop,
     fileName: preview.fileName,
+    format: preview.format,
     fileHash: preview.fileHash,
     counts: preview.counts,
     blocked: preview.blocked,

@@ -24,11 +24,20 @@ export interface ImportIssue {
 
 export type RowVerdict = "changed" | "unchanged" | "error";
 
+export const SUPPLY_CSV_FORMATS = ["simple", "cafe24-product"] as const;
+export type SupplyCsvFormat = (typeof SUPPLY_CSV_FORMATS)[number];
+
+export const SUPPLY_CSV_FORMAT_LABELS: Record<SupplyCsvFormat, string> = {
+  simple: "단순 형식 (variant_code,supply_price)",
+  "cafe24-product": "Cafe24 상품목록 (상품코드,공급가)",
+};
+
 export interface CsvRow {
   line: number;
   variantCode: string;
   rawSupplyPrice: string;
   fieldCount: number;
+  expectedFieldCount?: number;
 }
 
 export interface PlatformVariant {
@@ -74,6 +83,7 @@ export interface ImportPreview {
   jobId: string;
   shop: ShopRef;
   fileName: string;
+  format: SupplyCsvFormat;
   fileHash: string;
   createdAt: string;
   previewVersion: number;

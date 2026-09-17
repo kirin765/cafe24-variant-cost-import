@@ -81,6 +81,19 @@ test("몰을 바꾸면 품목이 격리된다", async ({ page }) => {
   await expect(count(page, "count-matched")).toHaveText("0");
 });
 
+test("Cafe24 상품목록 형식을 상품코드로 매칭하고 4500.00을 정규화한다", async ({ page }) => {
+  await page.getByLabel("대상 몰").selectOption("tenant-delta");
+  await page.getByLabel("합성 파일").selectOption("cafe24-product");
+
+  await expect(page.getByTestId("csv-format")).toContainText("Cafe24 상품목록");
+  await expect(count(page, "count-total")).toHaveText("3");
+  await expect(count(page, "count-matched")).toHaveText("3");
+  await expect(count(page, "count-changed")).toHaveText("1");
+  await expect(count(page, "count-unchanged")).toHaveText("2");
+  await expect(count(page, "count-errors")).toHaveText("0");
+  await expect(page.getByRole("heading", { name: "검증 통과" })).toBeVisible();
+});
+
 test("직접 올린 CSV도 같은 검증을 거친다", async ({ page }) => {
   await page.getByLabel("CSV 직접 올리기").setInputFiles({
     name: "uploaded.csv",

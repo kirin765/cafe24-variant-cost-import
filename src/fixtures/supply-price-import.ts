@@ -30,6 +30,13 @@ export const SHOPS: ShopRef[] = [
     name: "합성몰 감마 (품목 없음)",
     currency: "KRW",
   },
+  {
+    tenantId: "tenant-delta",
+    mallId: "synthetic-delta",
+    shopNumber: "4004",
+    name: "합성몰 델타 (Cafe24 상품목록)",
+    currency: "KRW",
+  },
 ];
 
 function variant(
@@ -66,6 +73,9 @@ export const VARIANTS: PlatformVariant[] = [
   variant("tenant-alpha", "synthetic-alpha", "P1000004", "검증용 상품", "ERR-EMPTY", "빈값", 1000),
   variant("tenant-beta", "synthetic-beta", "P2000001", "베타 전용 파우치", "BETA-01", "기본형", 3000),
   variant("tenant-beta", "synthetic-beta", "P2000001", "베타 전용 파우치", "BETA-02", "와이드형", 3800),
+  variant("tenant-delta", "synthetic-delta", "P9000001", "합성 상품 1", "P9000001", "기본", 4500),
+  variant("tenant-delta", "synthetic-delta", "P9000002", "합성 상품 2", "P9000002", "기본", 9500),
+  variant("tenant-delta", "synthetic-delta", "P9000003", "합성 상품 3", "P9000003", "기본", 2000),
 ];
 
 export const IMPORT_FILES: SyntheticImportFile[] = [
@@ -117,6 +127,20 @@ export const IMPORT_FILES: SyntheticImportFile[] = [
       ",5000",
       "SKU-0004,5000,extra",
       "GHOST-404,5000",
+      "",
+    ].join("\n"),
+  },
+  {
+    id: "cafe24-product",
+    label: "Cafe24 상품목록 형식",
+    fileName: "cafe24-products.csv",
+    description:
+      "Cafe24 상품목록 내보내기 형식(상품코드·공급가)입니다. 합성몰 델타를 고르면 상품코드로 매칭됩니다. 공급가 4500.00은 4500으로 정규화됩니다.",
+    content: [
+      "상품코드,자체 상품코드,상품명,소비자가,공급가,판매가",
+      "P9000001,,합성 상품 1,5000.00,4500.00,5000.00",
+      "P9000002,,합성 상품 2,10000.00,9000.00,10000.00",
+      "P9000003,,합성 상품 3,3000.00,2000.00,3000.00",
       "",
     ].join("\n"),
   },
