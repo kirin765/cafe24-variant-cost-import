@@ -46,5 +46,9 @@ export default defineConfig({
         url: BASE_URL,
         reuseExistingServer: !process.env.CI,
         timeout: 180_000,
+        env: {
+          CAFE24_CLIENT_ID: process.env.CAFE24_CLIENT_ID ?? "e2e-client-id",
+          CAFE24_CLIENT_SECRET: process.env.CAFE24_CLIENT_SECRET ?? "e2e-client-secret",
+        },
       },
 });

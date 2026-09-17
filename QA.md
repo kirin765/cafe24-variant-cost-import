@@ -28,7 +28,7 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 `npm run e2e`는 `e2e/`의 Playwright 스펙 8개를 별도 포트(`E2E_PORT`, 기본 3112)에서 실행한다.
 `E2E_BASE_URL`을 주면 로컬 서버를 띄우지 않고 그 URL(예: Vercel 배포)을 검사한다.
 
-### 단위 테스트 — `npm test` (50개, 2026-09-16 통과)
+### 단위 테스트 — `npm test` (65개, 2026-09-17 통과)
 
 | 파일 | 덮는 내용 |
 |---|---|
@@ -36,6 +36,7 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 | `src/features/imports/validate.test.ts` | 정수/0원/앞자리 0 허용, 빈값·음수·통화·천 단위·소수·지수·공백·문자·범위초과 거부, 변경/동일 구분, 파일 내 중복(값 동일 포함), 미매칭, 열 개수 불일치, 플랫폼 중복 코드, 집계 |
 | `src/features/imports/preview.test.ts` | 정상/오류/헤더 파일 집계와 차단, 몰별 격리, 품목 없는 몰, 파일 해시 안정성, 확정 가능 여부, 검토/변경/JSON 명세 |
 | `src/lib/cafe24/gateway.test.ts` | fixture gateway의 몰별 품목 필터, 빈 몰 |
+| `src/lib/cafe24/oauth.test.ts` | state 서명·변조·만료·mall_id 검증, authorize URL, 토큰 파싱·필수값, Basic 인증 토큰 교환·오류, 환경변수 누락 |
 
 ### 브라우저 스모크 — `npm run smoke` (25개, 2026-09-16 통과)
 
@@ -67,12 +68,13 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 | 24 | 베타몰 미매칭 없음 | 통과 |
 | 25 | 품목 없는 몰은 전부 미매칭 | 통과 |
 
-### Playwright E2E — `npm run e2e` (8개, 2026-09-17 통과)
+### Playwright E2E — `npm run e2e` (12개, 2026-09-17 통과)
 
 | 파일 | 덮는 흐름 |
 |---|---|
 | `e2e/home.spec.ts` | 소개 화면의 흐름·규칙·미포함 범위, 데모 링크 이동 |
 | `e2e/demo.spec.ts` | 정상 파일 집계·확정 활성, 확정 안내, 검토/변경/JSON 다운로드, 오류 파일 차단과 행별 메시지, 잘못된 헤더 거부, 몰 전환 격리, 직접 올린 CSV 검증 |
+| `e2e/oauth.spec.ts` | authorize 302·state 쿠키, 잘못된 mall_id 400, state 없는 callback 400, 사용자 거부 400 |
 
 ## 수동 검증표
 
@@ -89,10 +91,16 @@ npm run verify        # lint → typecheck → unit test → build → 브라우
 | `/demo` 명세 내보내기 | 검토 CSV·변경 명세 CSV·JSON 명세 | 검토는 전체 행, 변경 명세는 변경 행만, JSON은 변경 목록·차단 사유 포함 |
 | `/demo` CSV 인코딩 | 내려받은 검토 CSV를 Excel로 열기 | 한글 헤더가 깨지지 않는다(BOM 포함) |
 | `/` 규칙 안내 | 소개 화면 | 매칭·금액·차단 규칙과 "데모에 없는 것"이 보인다 |
+| OAuth 시작 | `CAFE24_*` 설정 후 `/api/cafe24/oauth/start?mall_id=<몰>` | `https://<몰>.cafe24api.com/api/v2/oauth/authorize?...&scope=mall.read_product mall.write_product mall.read_store`로 302 |
+| OAuth 콜백 | 인증 승인 후 callback | 연결 완료 페이지에 mall·scope·만료 시각이 보이고 토큰 값은 보이지 않는다. `state` 불일치·만료는 400 |
+| OAuth 미설정 | `CAFE24_*` 없이 start 호출 | 누락된 환경변수를 나열한 500 |
 
 ## 알려진 한계 (B 단계에서 확인 필요)
 
-- 실제 Cafe24 API·OAuth·scope·버전을 확인하지 않았다. `VariantGateway`는 인터페이스와 fixture 구현만 있다.
+- OAuth 콜백·토큰 교환·state 검증·refresh 잠금만 구현했다. 품목 조회/공급가 쓰기, 토큰의 암호화 DB 저장은
+  아직 없다(메모리 저장소는 재시작 시 소실). `VariantGateway`는 여전히 인터페이스와 fixture 구현만 있다.
+- 실제 테스트몰에서 authorize→code→token 전체 흐름을 아직 실행하지 않았다. scope 승인·`shop_no`/`user_id`
+  값은 문서 기반이다.
 - `product_no`/`variant_code`/`shop_no`의 정확한 관계와 금액 정밀도·허용 범위는 미확인이다. 데모는
   KRW 정수 원 단위만 다룬다.
 - 서버 저장(Postgres)·worker·재조회·복원·충돌 처리는 없다. 상태는 페이지 메모리에만 있고 새로고침하면
