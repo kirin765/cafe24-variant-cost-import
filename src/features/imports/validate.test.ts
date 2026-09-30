@@ -11,7 +11,7 @@ function row(
   return { line, variantCode, rawSupplyPrice, fieldCount };
 }
 
-function variant(variantCode: string, supplyPrice: number): PlatformVariant {
+function variant(variantCode: string, supplyPrice: number | null): PlatformVariant {
   return {
     tenantId: "t1",
     mallId: "m1",
@@ -123,6 +123,14 @@ describe("validateImportRows", () => {
     const rows = validateImportRows({ rows: [row(2, "A", "1000", 3)], variants });
     expect(rows[0].issues.some((item) => item.code === "malformed_row")).toBe(true);
     expect(rows[0].verdict).toBe("error");
+  });
+
+  it("매칭됐지만 현재 공급가를 못 읽으면 0으로 보지 않고 오류로 막는다", () => {
+    const rows = validateImportRows({ rows: [row(2, "A", "1500")], variants: [variant("A", null)] });
+    expect(rows[0].matched).toBe(true);
+    expect(rows[0].beforePrice).toBeNull();
+    expect(rows[0].verdict).toBe("error");
+    expect(rows[0].issues.some((item) => item.code === "unknown_before_price")).toBe(true);
   });
 
   it("플랫폼 안 같은 코드가 둘이면 매칭을 막는다", () => {

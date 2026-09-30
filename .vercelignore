@@ -1,0 +1,12 @@
+.agents
+.claude
+skills-lock.json
+test-results
+playwright-report
+blob-report
+playwright/.cache
+docs
+TODO.md
+.env
+.env.local
+.env*.local

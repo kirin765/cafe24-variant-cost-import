@@ -12,6 +12,16 @@ export interface Cafe24ConfigResult {
   missing: string[];
 }
 
+/**
+ * 실제 공급가 쓰기 기능 활성화 여부. 한 품목 검증 전에는 켜지 않는다.
+ * 기본값은 비활성(false)이다.
+ */
+export function isWriteEnabled(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  return env.IMPORT_WRITE_ENABLED?.trim().toLowerCase() === "true";
+}
+
 export function readCafe24Config(
   env: Record<string, string | undefined> = process.env,
 ): Cafe24ConfigResult {

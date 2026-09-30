@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>옵션별 공급가 CSV 가져오기 — 상세 설명 이미지</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Noto Sans CJK KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: #eff6ff;
+  }
+  .shot { width: 1240px; padding: 64px 72px; margin: 0; position: relative; overflow: hidden; }
+  .kicker { font-size: 15px; font-weight: 800; letter-spacing: .12em; color: #2563eb; }
+  h2 { font-size: 34px; font-weight: 800; line-height: 1.3; color: #0f172a; margin-top: 12px; }
+  h2 em { font-style: normal; color: #1d4ed8; }
+  p.lead { font-size: 17px; color: #475569; line-height: 1.65; margin-top: 14px; }
+
+  .card {
+    background: #fff; border: 1px solid #dbeafe; border-radius: 16px; padding: 20px 22px;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, .06);
+  }
+  .card h3 { font-size: 17px; color: #0f172a; }
+  .card p { font-size: 14px; color: #64748b; line-height: 1.6; margin-top: 6px; }
+
+  /* 흐름 */
+  .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 28px; }
+  .step { background: #fff; border: 1px solid #dbeafe; border-radius: 16px; padding: 18px 16px; }
+  .step .num {
+    width: 30px; height: 30px; border-radius: 9px; background: #2563eb; color: #fff;
+    font-weight: 800; font-size: 15px; display: inline-flex; align-items: center; justify-content: center;
+    margin-bottom: 12px;
+  }
+  .step:last-child .num { background: #059669; }
+  .step h3 { font-size: 15px; color: #0f172a; line-height: 1.4; }
+  .step p { font-size: 12.5px; color: #64748b; line-height: 1.5; margin-top: 6px; }
+
+  /* 안전 범위 */
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 26px; }
+  .panel { border-radius: 18px; padding: 22px 24px; }
+  .panel.ok { background: #ecfdf5; border: 1px solid #a7f3d0; }
+  .panel.hold { background: #f1f5f9; border: 1px solid #cbd5e1; }
+  .panel h3 { font-size: 19px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+  .panel.ok h3 { color: #065f46; }
+  .panel.hold h3 { color: #334155; }
+  .panel ul { list-style: none; margin-top: 14px; }
+  .panel li { font-size: 14.5px; line-height: 1.7; }
+  .panel.ok li { color: #047857; }
+  .panel.hold li { color: #475569; }
+  .dot { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 15px; font-weight: 900; }
+  .dot.g { background: #059669; }
+  .dot.s { background: #94a3b8; }
+
+  /* 설정 */
+  .switch { display: grid; grid-template-columns: 1fr 70px 1fr; align-items: center; gap: 8px; margin-top: 26px; }
+  .swcard { border-radius: 18px; padding: 22px 24px; }
+  .swcard.bad { background: #fef2f2; border: 1px solid #fca5a5; }
+  .swcard.good { background: #ecfdf5; border: 1px solid #6ee7b7; }
+  .swcard h3 { font-size: 20px; font-weight: 800; }
+  .swcard.bad h3 { color: #991b1b; }
+  .swcard.good h3 { color: #065f46; }
+  .swcard p { font-size: 14px; line-height: 1.7; margin-top: 12px; }
+  .swcard.bad p { color: #b91c1c; }
+  .swcard.good p { color: #047857; }
+  .arrow { text-align: center; font-size: 34px; color: #2563eb; font-weight: 900; }
+</style>
+</head>
+<body>
+
+<!-- 1. 사용 흐름 -->
+<section class="shot" id="d1" style="background:linear-gradient(160deg,#fff 0%,#eff6ff 100%)">
+  <p class="kicker">HOW IT WORKS</p>
+  <h2>다섯 단계로 끝납니다</h2>
+  <p class="lead">원가표 CSV를 올리고, 바뀔 값을 검토한 뒤에만 반영합니다.</p>
+  <div class="flow">
+    <div class="step"><span class="num">1</span><h3>원가표 CSV 업로드</h3><p>variant_code·supply_price 또는 상품목록 내보내기를 자동 판별합니다.</p></div>
+    <div class="step"><span class="num">2</span><h3>품목 코드 정확 매칭</h3><p>앞자리 0과 문자열을 보존하고, 상품명 유사도로 매칭하지 않습니다.</p></div>
+    <div class="step"><span class="num">3</span><h3>변경 전·후 미리보기</h3><p>변경·동일·오류 건수와 행별 공급가를 표로 확인합니다.</p></div>
+    <div class="step"><span class="num">4</span><h3>확정 후 실행</h3><p>실행 직전 재조회로 충돌을 확인하고 행별 결과를 남깁니다.</p></div>
+    <div class="step"><span class="num">5</span><h3>복원 (선택)</h3><p>성공한 행을 변경 전 값으로 되돌리는 검토를 제공합니다.</p></div>
+  </div>
+</section>
+
+<!-- 2. 안전 범위 -->
+<section class="shot" id="d2" style="background:linear-gradient(160deg,#1e1b4b 0%,#1e3a8a 55%,#0b1220 100%); color:#fff">
+  <p class="kicker" style="color:#7dd3fc">SAFE SCOPE</p>
+  <h2 style="color:#fff">바꾸는 것은 <em style="color:#7dd3fc">공급가뿐</em></h2>
+  <p class="lead" style="color:#bfdbfe">요청 본문에는 supply_price만 담습니다. 판매가·재고·추가금액·설정은 보내지 않습니다.</p>
+  <div class="two">
+    <div class="panel ok">
+      <h3><span class="dot g">✓</span> 바뀌는 것 — 공급가</h3>
+      <ul>
+        <li>· 옵션(품목)별 공급가(supply_price)</li>
+        <li>· 확정한 작업의 행만 반영하고 결과를 행별로 기록</li>
+        <li>· 변경 전 값으로 복원하는 별도 검토 제공</li>
+      </ul>
+    </div>
+    <div class="panel hold">
+      <h3><span class="dot s">✕</span> 그대로 두는 것</h3>
+      <ul>
+        <li>· 판매가 · 할인 · 재고</li>
+        <li>· 옵션 추가금액 · 상품 설정</li>
+        <li>· 이 앱은 공급가 외 필드를 전송하지 않습니다</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 3. 설정 안내 -->
+<section class="shot" id="d3" style="background:#fff">
+  <p class="kicker">BEFORE YOU START</p>
+  <h2>공급가 관리 방식을 <em>‘품목 단위’</em>로</h2>
+  <p class="lead">Cafe24 관리자 &gt; 쇼핑몰 설정 &gt; 상품 설정 &gt; 상품 판매정보 설정에서 변경합니다.</p>
+  <div class="switch">
+    <div class="swcard bad">
+      <h3>상품 단위 (기본)</h3>
+      <p>품목 조회의 supply_price가 모두 null<br>422 Supply price by item cannot be modified.</p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="swcard good">
+      <h3>품목 단위</h3>
+      <p>조합형 상품의 품목마다 공급가를 다르게 관리<br>옵션이 있는 상품을 대상으로 사용</p>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

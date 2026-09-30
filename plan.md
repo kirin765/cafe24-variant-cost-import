@@ -2,7 +2,7 @@
 
 - 작성일: 2026-09-16
 - 프로젝트: `cafe24-variant-cost-import` — 후보 4
-- 상태: A. 2시간 데모 구현·자동 검증 완료(2026-09-16). B. OAuth 콜백·토큰 교환·launch 서명·Cafe24 상품목록 CSV adapter·Admin API 상품 조회·자동 검증(2026-09-17). 품목 쓰기 검증·C 미착수
+- 상태: A. 2시간 데모 구현·자동 검증 완료(2026-09-16). B. OAuth 콜백·토큰 교환·launch 서명·Cafe24 상품목록 CSV adapter·Admin API 상품 조회·자동 검증(2026-09-17). B 입구: 토큰 암호화 Postgres 저장·세션·`/imports/new`·실제 품목(variant) 조회 gateway·CSV 미리보기 저장·`/imports/[id]/preview`(2026-09-17). B 실행: 한 품목 쓰기·재조회·복원 adapter와 ledger/runner(쓰기 기본 비활성, 모의 검증). 실제 onnurimun에서 품목별 공급가 수정이 422로 거부됨(상품 단위 공급가만, `calculate_price_based_on=S`) — 다른 테스트몰 재검증 필요·C 파일럿 미착수
 - 담당: Giwan(제품 선택·테스트몰 검증), 개발 세션(구현·자동 검증)
 
 ## 1. 목적과 근거
@@ -139,8 +139,16 @@ QA.md                   수동 검증표
 ### B. 한 품목 쓰기 검증 — 다음 상한 선기록
 
 - [x] OAuth 콜백·토큰 교환 스캐폴드. — `src/lib/cafe24/{env,oauth,token-store}.ts`, `src/app/api/cafe24/oauth/{start,callback}/route.ts`, 단위 테스트 15개, E2E 4개 (2026-09-17)
-- [x] Admin API 상품 조회(Bearer)와 콜백 조회 스냅샷. — `src/lib/cafe24/admin.ts`, `token-store.ts`, 단위 테스트 18개 (2026-09-17)
-- [ ] 앱/권한·테스트몰 전제 확인, 한 품목 before snapshot.
+- [x] Admin API 상품 조회(Bearer)와 콜백 조회 스냅샷. — `src/lib/cafe24/admin.ts`, 단위 테스트 18개 (2026-09-17)
+- [x] 토큰 암호화 Postgres 저장(Neon)·서버 검증 세션·몰/쇼핑몰 일관성·DB advisory 잠금 refresh·`/imports/new` 진입. — `db/migrations/0001_init.sql`, `src/lib/{crypto,db}/`, `src/lib/cafe24/{shop-store,session,token-lifecycle,auth}.ts`, `src/app/imports/new/page.tsx` (2026-09-17)
+- [x] 유효 세션 재접속은 작업 화면으로, 만료·권한 철회는 재인증 안내. — `src/app/api/cafe24/launch/route.ts`, `/imports/new` (2026-09-17)
+- [x] 품목 조회·수정 endpoint, API 버전 헤더, scope, supply_price 근거 기록. — `docs/cafe24-api-notes.md` (2026-09-17)
+- [x] 실제 VariantGateway(상품→품목 페이지네이션, 옵션·현재 공급가)와 상품/품목 단위 CSV 구분. — `src/lib/cafe24/{variants,gateway,amount}.ts` (2026-09-17)
+- [x] CSV 업로드 → 실제 품목 검증·미리보기 저장 → `/imports/[id]/preview`(읽기 전용, shop 권한). — `src/app/api/imports/route.ts`, `src/features/imports/store.ts`, `db/migrations/0002_import_jobs.sql` (2026-09-17)
+- [x] 실행 직전 재조회·충돌 차단, `supply_price`만 쓰기, 쓰기 후 재조회, timeout·응답 유실 결과 불명 분류. — `src/lib/cafe24/variants.ts`, `src/features/imports/executor.ts` (2026-09-17)
+- [x] 복원 미리보기·별도 확정, 현재 값이 원작업 목표값과 다르면 자동 복원하지 않음. — `src/features/imports/restore.ts`, `/imports/[id]/restore` (2026-09-17)
+- [x] `attempts`·`restore_jobs` ledger, 실행 리스·중복 방지·재개 runner. — `db/migrations/0003_execution.sql`, `src/features/imports/{store,runner}.ts` (2026-09-17)
+- [ ] 앱/권한·테스트몰 전제 확인, 한 품목 before snapshot. 실행은 `IMPORT_WRITE_ENABLED`로 켠다.
 - [ ] 쓰기·재조회·복원 adapter와 실패 시나리오 구현.
 - [ ] 읽기/쓰기 제약으로 불가능하면 원가 보고서 등 다른 제품으로 자동 전환하지 않고 결과 기록.
 

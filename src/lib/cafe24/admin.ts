@@ -1,21 +1,10 @@
+import { parseCafe24Amount } from "./amount";
 import { isValidMallId, type FetchLike } from "./oauth";
 
 export interface AdminProduct {
   productNo: string;
   productName: string;
   supplyPrice: number | null;
-}
-
-function toAmount(value: unknown): number | null {
-  if (typeof value === "number") {
-    return Number.isSafeInteger(value) ? value : null;
-  }
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  const normalized = /^(\d+)\.0+$/.exec(trimmed)?.[1] ?? trimmed;
-  if (!/^\d+$/.test(normalized)) return null;
-  const parsed = Number(normalized);
-  return Number.isSafeInteger(parsed) ? parsed : null;
 }
 
 function readProducts(raw: unknown): unknown[] {
@@ -37,7 +26,7 @@ export function parseAdminProducts(raw: unknown): AdminProduct[] {
     products.push({
       productNo: String(productNo),
       productName,
-      supplyPrice: toAmount(record.supply_price),
+      supplyPrice: parseCafe24Amount(record.supply_price),
     });
   }
   return products;

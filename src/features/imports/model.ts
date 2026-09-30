@@ -12,7 +12,13 @@ export const IMPORT_ISSUE_CODES = [
   "duplicate_code",
   "unmatched_code",
   "duplicate_platform_code",
+  "unknown_before_price",
   "zero_price",
+  "restore_source_not_success",
+  "restore_missing_price",
+  "restore_no_change",
+  "restore_current_unknown",
+  "restore_external_change",
 ] as const;
 export type ImportIssueCode = (typeof IMPORT_ISSUE_CODES)[number];
 
@@ -48,7 +54,7 @@ export interface PlatformVariant {
   productName: string;
   variantCode: string;
   optionName: string;
-  supplyPrice: number;
+  supplyPrice: number | null;
   currency: string;
 }
 

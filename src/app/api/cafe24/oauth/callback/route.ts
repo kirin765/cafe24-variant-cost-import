@@ -1,15 +1,18 @@
 import { cookies } from "next/headers";
-import { listAdminProducts } from "@/lib/cafe24/admin";
+import { NextResponse } from "next/server";
+import type { Pool } from "pg";
+import { getEncryptionKey } from "@/lib/crypto/key";
+import { getPool } from "@/lib/db/pool";
 import { readCafe24Config } from "@/lib/cafe24/env";
 import {
-  CAFE24_REQUIRED_SCOPES,
   OAUTH_STATE_COOKIE,
   exchangeAuthorizationCode,
-  missingScopes,
+  isValidShopNo,
   verifyOAuthState,
   type Cafe24Token,
 } from "@/lib/cafe24/oauth";
-import { TOKEN_STORE_NOTE, saveProductSnapshot, saveToken } from "@/lib/cafe24/token-store";
+import { connectShop, createSession } from "@/lib/cafe24/shop-store";
+import { sessionCookieOptions } from "@/lib/cafe24/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,7 +26,17 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function page(title: string, body: string, status: number): Response {
+function clearStateCookie(response: NextResponse): NextResponse {
+  response.cookies.set({
+    name: OAUTH_STATE_COOKIE,
+    value: "",
+    path: "/api/cafe24/oauth",
+    maxAge: 0,
+  });
+  return response;
+}
+
+function page(title: string, body: string, status: number): NextResponse {
   const html = `<!doctype html>
 <html lang="ko">
 <head><meta charset="utf-8"><title>${escapeHtml(title)}</title></head>
@@ -32,47 +45,19 @@ function page(title: string, body: string, status: number): Response {
 ${body}
 <p><a href="/demo">데모로 돌아가기</a></p>
 </body></html>`;
-  return new Response(html, {
-    status,
-    headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
-  });
-}
-
-function clearStateCookie(response: Response): Response {
-  response.headers.append(
-    "Set-Cookie",
-    `${OAUTH_STATE_COOKIE}=; HttpOnly; SameSite=Lax; Path=/api/cafe24/oauth; Max-Age=0`,
+  return clearStateCookie(
+    new NextResponse(html, {
+      status,
+      headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
+    }),
   );
-  return response;
 }
 
-function errorPage(message: string, status: number): Response {
-  return clearStateCookie(page("Cafe24 연결 실패", `<p>${escapeHtml(message)}</p>`, status));
+function errorPage(message: string, status: number): NextResponse {
+  return page("Cafe24 연결 실패", `<p>${escapeHtml(message)}</p>`, status);
 }
 
-function describeToken(token: Cafe24Token): string {
-  const missing = missingScopes(token.scopes);
-  const rows = [
-    ["쇼핑몰", token.mallId || "—"],
-    ["사용자", token.userId ?? "—"],
-    ["shop_no", token.shopNo ?? "—"],
-    ["승인 scope", token.scopes.join(", ") || "—"],
-    ["Access Token 만료", token.expiresAt || "—"],
-    ["Refresh Token 만료", token.refreshTokenExpiresAt || "—"],
-  ]
-    .map(
-      ([label, value]) =>
-        `<tr><th style="text-align:left;padding:4px 12px 4px 0">${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`,
-    )
-    .join("");
-  const missingWarning =
-    missing.length > 0
-      ? `<p style="color:#b45309"><strong>주의:</strong> 필수 scope가 부족합니다 — ${escapeHtml(missing.join(", "))}</p>`
-      : `<p style="color:#047857">필수 scope ${escapeHtml(CAFE24_REQUIRED_SCOPES.join(", "))}가 모두 승인되었습니다.</p>`;
-  return `<table>${rows}</table>${missingWarning}<p style="color:#525252;font-size:13px">${escapeHtml(TOKEN_STORE_NOTE)}</p><p style="color:#525252;font-size:13px">아직 공급가 쓰기는 수행하지 않습니다.</p>`;
-}
-
-export async function GET(request: Request): Promise<Response> {
+export async function GET(request: Request): Promise<NextResponse> {
   const result = readCafe24Config();
   if (!result.ok || !result.config) {
     return errorPage(
@@ -82,6 +67,7 @@ export async function GET(request: Request): Promise<Response> {
   }
   const config = result.config;
   const url = new URL(request.url);
+  const secure = url.protocol === "https:";
 
   const oauthError = url.searchParams.get("error");
   if (oauthError) {
@@ -102,6 +88,16 @@ export async function GET(request: Request): Promise<Response> {
     return errorPage(`state 검증에 실패했습니다 (${check.reason}).`, 400);
   }
 
+  let pool: Pool;
+  let encryptionKey: Buffer;
+  try {
+    pool = getPool();
+    encryptionKey = getEncryptionKey();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "알 수 없는 오류";
+    return errorPage(`저장소 설정이 올바르지 않습니다. ${message}`, 500);
+  }
+
   const redirectUri =
     config.redirectUri ?? new URL("/api/cafe24/oauth/callback", url.origin).toString();
 
@@ -119,34 +115,24 @@ export async function GET(request: Request): Promise<Response> {
     return errorPage(`토큰 교환에 실패했습니다. ${message}`, 502);
   }
 
-  saveToken(check.state.mallId, token);
+  const mallId = check.state.mallId;
+  const shopNo = token.shopNo && isValidShopNo(token.shopNo) ? token.shopNo : "1";
 
-  let productSummary: string;
+  let sessionToken: string;
   try {
-    const products = await listAdminProducts({
-      mallId: check.state.mallId,
-      accessToken: token.accessToken,
-      apiVersion: process.env.CAFE24_API_VERSION?.trim() || null,
+    const shop = await connectShop(pool, {
+      shop: { tenantId: mallId, mallId, shopNo, name: mallId, currency: "KRW" },
+      token,
+      encryptionKey,
     });
-    saveProductSnapshot(check.state.mallId, products);
-    const withPrice = products.filter((entry) => entry.supplyPrice !== null).length;
-    const listItems = products
-      .slice(0, 20)
-      .map(
-        (entry) =>
-          `<li><code>${escapeHtml(entry.productNo)}</code> ${escapeHtml(entry.productName)}${
-            entry.supplyPrice === null ? " (공급가 없음)" : ""
-          }</li>`,
-      )
-      .join("");
-    const more = products.length > 20 ? `<li>…외 ${products.length - 20}개</li>` : "";
-    productSummary = `<p>상품 ${products.length}개를 조회했습니다. 공급가를 읽은 상품 ${withPrice}개.</p><ul>${listItems}${more}</ul>`;
+    const session = await createSession(pool, shop.id);
+    sessionToken = session.token;
   } catch (error) {
     const message = error instanceof Error ? error.message : "알 수 없는 오류";
-    productSummary = `<p style="color:#b45309">상품 조회는 실패했습니다. ${escapeHtml(message)}</p>`;
+    return errorPage(`연결 정보를 저장하지 못했습니다. ${message}`, 500);
   }
 
-  return clearStateCookie(
-    page("Cafe24 연결 완료", `${describeToken(token)}${productSummary}`, 200),
-  );
+  const response = NextResponse.redirect(new URL("/imports/new", url.origin), 303);
+  response.cookies.set({ ...sessionCookieOptions(secure), value: sessionToken });
+  return clearStateCookie(response);
 }

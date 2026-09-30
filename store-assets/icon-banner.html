@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>옵션별 공급가 CSV 가져오기 아이콘 · 배너</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Noto Sans CJK KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+
+  /* ── 아이콘 512 ─────────────────────────────────────────── */
+  #icon {
+    width: 512px; height: 512px; position: relative; overflow: hidden;
+    background: linear-gradient(150deg, #2563eb 0%, #1e3a8a 55%, #0b1220 100%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #icon .halo {
+    position: absolute; width: 340px; height: 340px; border-radius: 50%;
+    background: rgba(255,255,255,.07); border: 6px solid rgba(147,197,253,.35);
+  }
+  #icon .won {
+    position: relative; color: #fff; font-weight: 900; font-size: 300px; line-height: 1;
+    margin-bottom: 8px;
+  }
+  #icon .csv {
+    position: absolute; right: 34px; bottom: 34px; width: 172px; height: 172px; border-radius: 50%;
+    background: #22d3ee; border: 16px solid #0f1b33; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; gap: 10px;
+  }
+  #icon .csv i { display: block; height: 15px; border-radius: 8px; background: #0b1220; }
+  #icon .csv i:nth-child(1) { width: 72px; }
+  #icon .csv i:nth-child(2) { width: 72px; }
+  #icon .csv i:nth-child(3) { width: 48px; align-self: center; margin-left: -24px; }
+
+  /* ── 배너 740×416 ───────────────────────────────────────── */
+  #banner {
+    width: 740px; height: 416px; position: relative; overflow: hidden;
+    background: linear-gradient(150deg, #1e40af 0%, #1e3a8a 50%, #0b1220 100%);
+    color: #fff; padding: 50px 46px;
+  }
+  #banner .glow1 {
+    position: absolute; left: -80px; top: -90px; width: 420px; height: 420px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(59,130,246,.65), rgba(59,130,246,0) 68%);
+  }
+  #banner .glow2 {
+    position: absolute; right: -90px; bottom: -110px; width: 420px; height: 420px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(34,211,238,.35), rgba(34,211,238,0) 70%);
+  }
+  #banner .halo {
+    position: absolute; right: 30px; top: 62px; width: 300px; height: 300px; border-radius: 50%;
+    background: rgba(255,255,255,.08); border: 2px solid rgba(147,197,253,.28);
+  }
+  #banner .won {
+    position: absolute; right: 96px; top: 60px; width: 260px; text-align: center;
+    font-size: 210px; font-weight: 900; line-height: 300px; color: #fff;
+  }
+  #banner .csv {
+    position: absolute; right: 34px; bottom: 52px; width: 120px; height: 120px; border-radius: 50%;
+    background: #22d3ee; border: 12px solid #0f1b33; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; gap: 7px;
+  }
+  #banner .csv i { display: block; height: 11px; border-radius: 6px; background: #0b1220; }
+  #banner .csv i:nth-child(1), #banner .csv i:nth-child(2) { width: 52px; }
+  #banner .csv i:nth-child(3) { width: 34px; margin-left: -18px; }
+  #banner .check {
+    position: absolute; left: 440px; top: 66px; width: 68px; height: 68px; border-radius: 50%;
+    background: #34d399; border: 10px solid #0f1b33; display: flex; align-items: center; justify-content: center;
+    color: #0b1220; font-size: 34px; font-weight: 900;
+  }
+  #banner .kick { position: relative; font-size: 15px; font-weight: 700; letter-spacing: .22em; color: #7dd3fc; }
+  #banner h1 { position: relative; font-size: 40px; font-weight: 900; line-height: 1.28; margin-top: 26px; }
+  #banner .rule { position: relative; width: 72px; height: 7px; border-radius: 4px; background: #22d3ee; margin-top: 14px; }
+  #banner p { position: relative; color: #dbeafe; }
+  #banner p.sub1 { font-size: 19px; font-weight: 500; margin-top: 22px; }
+  #banner p.sub2 { font-size: 17px; color: #bfdbfe; margin-top: 8px; }
+  #banner p.feat { font-size: 15px; font-weight: 700; color: #7dd3fc; margin-top: 30px; }
+</style>
+</head>
+<body>
+
+<div id="icon">
+  <div class="halo"></div>
+  <div class="won">₩</div>
+  <div class="csv"><i></i><i></i><i></i></div>
+</div>
+
+<div id="banner">
+  <div class="glow1"></div>
+  <div class="glow2"></div>
+  <div class="halo"></div>
+  <div class="won">₩</div>
+  <div class="csv"><i></i><i></i><i></i></div>
+  <div class="check">✓</div>
+  <div class="kick">CAFE24 VARIANT COST IMPORT</div>
+  <h1>공급사 원가표 CSV를<br>옵션별 공급가로</h1>
+  <div class="rule"></div>
+  <p class="sub1">바뀔 값을 미리 검토한 뒤 한 번에 반영</p>
+  <p class="sub2">판매가·재고는 그대로, 공급가만 수정</p>
+  <p class="feat">품목 코드 정확 매칭 · 오류 사전 차단 · 복원 검토</p>
+</div>
+
+</body>
+</html>

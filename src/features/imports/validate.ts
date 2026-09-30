@@ -134,6 +134,15 @@ export function validateImportRows({
         productNo = variant.productNo;
         productName = variant.productName;
         optionName = variant.optionName;
+        if (before === null) {
+          issues.push(
+            issue(
+              "unknown_before_price",
+              "error",
+              "이 품목의 현재 공급가를 읽지 못했습니다. 0으로 간주하지 않습니다.",
+            ),
+          );
+        }
         if (platformDuplicateCodes.has(code)) {
           issues.push(
             issue(
