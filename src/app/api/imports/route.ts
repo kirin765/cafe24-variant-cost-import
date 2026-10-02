@@ -10,16 +10,17 @@ import { getValidAccessToken } from "@/lib/cafe24/shop-store";
 import { ReauthRequiredError, toShopRef } from "@/lib/cafe24/store-model";
 import { getEncryptionKey } from "@/lib/crypto/key";
 import { getPool, hasDatabaseUrl } from "@/lib/db/pool";
+import { relativeRedirect } from "@/lib/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function redirectTo(requestUrl: string, path: string): NextResponse {
-  return NextResponse.redirect(new URL(path, requestUrl), 303);
+function redirectTo(path: string): NextResponse {
+  return relativeRedirect(path, 303);
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const back = (query: string) => redirectTo(request.url, `/imports/new?${query}`);
+  const back = (query: string) => redirectTo(`/imports/new?${query}`);
 
   if (!hasDatabaseUrl()) return back("error=storage");
 
@@ -84,7 +85,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       variants,
     });
     const jobId = await createImportJob(pool, { shopId: access.shop.id, preview });
-    return redirectTo(request.url, `/imports/${jobId}/preview`);
+    return redirectTo(`/imports/${jobId}/preview`);
   } catch (error) {
     if (error instanceof ReauthRequiredError) return back("error=reauth");
     const message = error instanceof Error ? error.message : "알 수 없는 오류";

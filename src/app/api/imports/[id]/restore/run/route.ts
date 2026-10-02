@@ -6,6 +6,7 @@ import { getRestoreJob } from "@/features/imports/store";
 import { getCurrentSession } from "@/lib/cafe24/auth";
 import { isWriteEnabled } from "@/lib/cafe24/env";
 import { getPool, hasDatabaseUrl } from "@/lib/db/pool";
+import { relativeRedirect } from "@/lib/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,16 +19,13 @@ export async function POST(
   const form = await request.formData().catch(() => null);
   const restoreJobId = typeof form?.get("rid") === "string" ? String(form.get("rid")) : "";
   const back = (query: string) =>
-    NextResponse.redirect(
-      new URL(`/imports/${id}/restore?rid=${restoreJobId}&${query}`, request.url),
-      303,
-    );
+    relativeRedirect(`/imports/${id}/restore?rid=${restoreJobId}&${query}`, 303);
 
   if (!hasDatabaseUrl()) return back("error=storage");
   const access = await getCurrentSession();
-  if (!access) return NextResponse.redirect(new URL("/imports/new", request.url), 303);
+  if (!access) return relativeRedirect("/imports/new", 303);
   if (!isWriteEnabled()) return back("error=write_disabled");
-  if (!restoreJobId) return NextResponse.redirect(new URL(`/imports/${id}`, request.url), 303);
+  if (!restoreJobId) return relativeRedirect(`/imports/${id}`, 303);
 
   const pool = getPool();
   const restoreJob = await getRestoreJob(pool, restoreJobId, access.shop.id);

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentSession, sessionMatchesShop } from "@/lib/cafe24/auth";
 import { readCafe24Config } from "@/lib/cafe24/env";
 import { verifyLaunchHmac } from "@/lib/cafe24/launch";
+import { relativeRedirect } from "@/lib/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,13 +31,14 @@ export async function GET(request: Request): Promise<NextResponse> {
   // 이미 연결된 몰이면 재인증 없이 작업 화면으로 보낸다. 세션의 몰과 요청 몰이 같을 때만 허용한다.
   const access = await getCurrentSession();
   if (access && sessionMatchesShop(access, mallId, shopNo || null)) {
-    return NextResponse.redirect(new URL("/imports/new", url.origin), 303);
+    return relativeRedirect("/imports/new", 303);
   }
 
-  const start = new URL("/api/cafe24/oauth/start", url.origin);
+  const params = new URLSearchParams();
   for (const key of ["mall_id", "shop_no"] as const) {
     const value = url.searchParams.get(key);
-    if (value) start.searchParams.set(key, value);
+    if (value) params.set(key, value);
   }
-  return NextResponse.redirect(start, 302);
+  const query = params.toString();
+  return relativeRedirect(`/api/cafe24/oauth/start${query ? `?${query}` : ""}`, 302);
 }

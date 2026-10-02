@@ -13,6 +13,7 @@ import {
 } from "@/lib/cafe24/oauth";
 import { connectShop, createSession } from "@/lib/cafe24/shop-store";
 import { sessionCookieOptions } from "@/lib/cafe24/auth";
+import { relativeRedirect } from "@/lib/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -132,7 +133,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     return errorPage(`연결 정보를 저장하지 못했습니다. ${message}`, 500);
   }
 
-  const response = NextResponse.redirect(new URL("/imports/new", url.origin), 303);
+  const response = relativeRedirect("/imports/new", 303);
   response.cookies.set({ ...sessionCookieOptions(secure), value: sessionToken });
   return clearStateCookie(response);
 }
